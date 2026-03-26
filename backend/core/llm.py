@@ -10,7 +10,11 @@ _client = None
 def _get_client() -> anthropic.Anthropic:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+        kwargs = {"api_key": os.environ.get("ANTHROPIC_API_KEY")}
+        base_url = os.environ.get("ANTHROPIC_BASE_URL", "").strip()
+        if base_url:
+            kwargs["base_url"] = base_url
+        _client = anthropic.Anthropic(**kwargs)
     return _client
 
 
