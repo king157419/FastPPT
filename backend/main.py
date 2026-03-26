@@ -6,6 +6,7 @@ from api.upload import router as upload_router
 from api.chat import router as chat_router
 from api.generate import router as generate_router
 from api.download import router as download_router
+from api.asr import router as asr_router
 
 app = FastAPI(title="FastPPT API")
 
@@ -24,6 +25,7 @@ app.include_router(upload_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
 app.include_router(generate_router, prefix="/api")
 app.include_router(download_router, prefix="/api")
+app.include_router(asr_router, prefix="/api")
 
 
 @app.get("/")

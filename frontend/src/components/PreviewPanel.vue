@@ -1,62 +1,66 @@
 <template>
   <div class="preview-panel">
-    <div class="preview-header">
-      <span class="preview-title">🖼 PPT 预览</span>
-      <span v-if="slides.length" class="slide-count">{{ slides.length }} 页</span>
+    <div class="panel-header">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="3" width="20" height="14" rx="2" stroke="#0D9488" stroke-width="2"/>
+          <path d="M8 21h8M12 17v4" stroke="#0D9488" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>课件预览</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span v-if="pages.length" class="slide-count">{{ pages.length }} 页</span>
+        <button v-if="pages.length" class="export-btn" @click="exportPPTX">↓ 导出 .pptx</button>
+      </div>
     </div>
 
-    <div v-if="!slides.length && !loading" class="empty-state">
-      <div class="empty-icon">📊</div>
+    <div v-if="!pages.length" class="empty-state">
+      <div class="empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="3" width="20" height="14" rx="2" stroke="#D1D5DB" stroke-width="1.5"/>
+          <path d="M8 21h8M12 17v4" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
       <div class="empty-title">暂无预览</div>
-      <div class="empty-sub">生成课件后，幻灯片将显示在此处</div>
+      <div class="empty-sub">完成对话并生成课件后，幻灯片将显示在此处</div>
     </div>
 
-    <div v-if="loading" class="loading-state">
-      <div class="load-ring"></div>
-      <span>正在渲染预览...</span>
-    </div>
-
-    <template v-if="slides.length">
-      <!-- 缩略图条 -->
+    <template v-if="pages.length">
       <div class="thumb-strip">
         <div
-          v-for="s in slides"
-          :key="s.page"
+          v-for="(page, i) in pages"
+          :key="i"
           class="thumb"
-          :class="{ active: currentPage === s.page }"
-          @click="currentPage = s.page"
+          :class="{ active: currentIndex === i }"
+          @click="currentIndex = i"
         >
-          <img :src="s.image" :alt="`第${s.page}页`" class="thumb-img" />
-          <span class="thumb-num">{{ s.page }}</span>
+          <div class="thumb-inner">
+            <SlideRenderer :page="page" :theme="theme" :mini="true" />
+          </div>
+          <span class="thumb-num">{{ i + 1 }}</span>
         </div>
       </div>
 
-      <!-- 主视图 -->
       <div class="main-view">
         <Transition name="slide-fade" mode="out-in">
-          <img
-            v-if="currentSlide"
-            :key="currentPage"
-            :src="currentSlide.image"
-            :alt="`第${currentPage}页`"
-            class="main-img"
-          />
+          <div :key="currentIndex" class="main-slide">
+            <SlideRenderer :page="pages[currentIndex]" :theme="theme" :mini="false" />
+          </div>
         </Transition>
       </div>
 
-      <!-- 导航 -->
       <div class="nav-bar">
-        <button class="nav-btn" :disabled="currentPage <= 1" @click="currentPage--">
+        <button class="nav-btn" :disabled="currentIndex <= 0" @click="currentIndex--">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
         <span class="page-counter">
-          <span class="page-cur">{{ currentPage }}</span>
+          <span class="page-cur">{{ currentIndex + 1 }}</span>
           <span class="page-sep">/</span>
-          <span class="page-total">{{ slides.length }}</span>
+          <span class="page-total">{{ pages.length }}</span>
         </span>
-        <button class="nav-btn" :disabled="currentPage >= slides.length" @click="currentPage++">
+        <button class="nav-btn" :disabled="currentIndex >= pages.length - 1" @click="currentIndex++">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -68,125 +72,175 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { getPreview } from '../api/index.js'
-import { ElMessage } from 'element-plus'
+import pptxgen from 'pptxgenjs'
+import SlideRenderer from './SlideRenderer.vue'
 
-const props = defineProps({ pptxFilename: String })
-const slides = ref([])
-const currentPage = ref(1)
-const loading = ref(false)
+const props = defineProps({ slidesJson: { type: Object, default: null } })
+const currentIndex = ref(0)
+const theme = computed(() => props.slidesJson?.theme || { primary: '#0f172a', accent: '#0D9488', text: '#f8fafc' })
+const pages = computed(() => props.slidesJson?.pages || [])
+watch(() => props.slidesJson, () => { currentIndex.value = 0 })
 
-const currentSlide = computed(() => slides.value.find(s => s.page === currentPage.value))
+async function exportPPTX() {
+  const pptx = new pptxgen()
+  pptx.layout = 'LAYOUT_WIDE'
+  const t = theme.value
+  const hex = c => c.replace('#', '')
 
-watch(() => props.pptxFilename, async (fn) => {
-  if (!fn) return
-  loading.value = true
-  slides.value = []
-  currentPage.value = 1
-  try {
-    const data = await getPreview(fn)
-    slides.value = data.slides
-  } catch (e) {
-    ElMessage.error('预览加载失败：' + (e.response?.data?.detail || e.message))
-  } finally {
-    loading.value = false
+  for (const page of pages.value) {
+    const slide = pptx.addSlide()
+    slide.background = { color: hex(t.primary) }
+
+    if (page.type === 'cover') {
+      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 0.1, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
+      slide.addText(page.title || '', { x: 0.5, y: 2.0, w: 12.3, h: 1.4, fontSize: 40, bold: true, color: hex(t.text), align: 'center', fontFace: 'Microsoft YaHei' })
+      slide.addText(page.subtitle || '', { x: 0.5, y: 3.6, w: 12.3, h: 0.7, fontSize: 20, color: hex(t.accent), align: 'center', fontFace: 'Microsoft YaHei' })
+    } else if (page.type === 'agenda') {
+      slide.addText(page.title || '目录', { x: 0.7, y: 0.4, w: 11.9, h: 0.8, fontSize: 28, bold: true, color: hex(t.text), fontFace: 'Microsoft YaHei' })
+      const items = (page.items || []).map((item, i) => ({ text: `${i + 1}.  ${item}`, options: { fontSize: 20, color: hex(t.text), fontFace: 'Microsoft YaHei', paraSpaceAfter: 10 } }))
+      slide.addText(items, { x: 1.2, y: 1.5, w: 10, h: 5 })
+    } else if (page.type === 'content') {
+      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
+      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
+      const bullets = (page.bullets || []).map(b => ({ text: b, options: { fontSize: 18, color: hex(t.text), bullet: { type: 'number' }, fontFace: 'Microsoft YaHei', paraSpaceAfter: 12 } }))
+      slide.addText(bullets, { x: 0.9, y: 1.4, w: 11.2, h: 4.5 })
+      if (page.tip) slide.addText('💡 ' + page.tip, { x: 0.5, y: 6.6, w: 12.3, h: 0.5, fontSize: 12, color: 'FFD700', italic: true, fontFace: 'Microsoft YaHei', align: 'right' })
+    } else if (page.type === 'code') {
+      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
+      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
+      slide.addText((page.language || '').toUpperCase(), { x: 0.7, y: 1.25, w: 2, h: 0.3, fontSize: 10, bold: true, color: hex(t.accent), fontFace: 'Courier New' })
+      slide.addShape(pptx.ShapeType.rect, { x: 0.5, y: 1.6, w: 12.3, h: 4.0, fill: { color: '1e293b' }, line: { color: '1e293b' } })
+      slide.addText(page.code || '', { x: 0.7, y: 1.7, w: 11.9, h: 3.8, fontSize: 13, color: 'e2e8f0', fontFace: 'Courier New', valign: 'top', wrap: true })
+      if (page.explanation) slide.addText(page.explanation, { x: 0.7, y: 5.75, w: 11.9, h: 0.5, fontSize: 13, color: hex(t.text), italic: true, fontFace: 'Microsoft YaHei' })
+    } else if (page.type === 'formula') {
+      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
+      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
+      let fy = 1.5
+      for (const f of (page.formulas || [])) {
+        slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: fy, w: 0.06, h: 0.55, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
+        slide.addText([{ text: (f.label || '') + ':  ', options: { bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' } }, { text: f.expr || '', options: { italic: true, color: hex(t.text), fontFace: 'Georgia' } }], { x: 0.9, y: fy, w: 11.4, h: 0.55, fontSize: 22 })
+        fy += 0.75
+      }
+      if (page.explanation) slide.addText(page.explanation, { x: 0.9, y: fy + 0.2, w: 11.4, h: 0.6, fontSize: 14, color: hex(t.text), italic: true, fontFace: 'Microsoft YaHei' })
+    } else if (page.type === 'example') {
+      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
+      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
+      slide.addText('题目：' + (page.problem || ''), { x: 0.7, y: 1.3, w: 11.9, h: 0.8, fontSize: 17, color: hex(t.text), fontFace: 'Microsoft YaHei', bold: false })
+      const steps = (page.steps || []).map((s, i) => ({ text: `Step ${i + 1}：${s}`, options: { fontSize: 15, color: hex(t.text), fontFace: 'Microsoft YaHei', paraSpaceAfter: 6 } }))
+      if (steps.length) slide.addText(steps, { x: 0.7, y: 2.2, w: 11.9, h: 3.2 })
+      if (page.answer) slide.addText('✓  ' + page.answer, { x: 0.7, y: 5.6, w: 11.9, h: 0.65, fontSize: 17, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
+    } else if (page.type === 'two_column') {
+      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
+      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
+      slide.addText(page.left?.heading || '', { x: 0.5, y: 1.3, w: 5.8, h: 0.55, fontSize: 18, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
+      const lpts = (page.left?.points || []).map(p => ({ text: '•  ' + p, options: { fontSize: 15, color: hex(t.text), fontFace: 'Microsoft YaHei', paraSpaceAfter: 8 } }))
+      if (lpts.length) slide.addText(lpts, { x: 0.5, y: 2.0, w: 5.8, h: 4.5 })
+      slide.addShape(pptx.ShapeType.rect, { x: 6.55, y: 1.25, w: 0.05, h: 5.0, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
+      slide.addText(page.right?.heading || '', { x: 6.85, y: 1.3, w: 5.8, h: 0.55, fontSize: 18, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
+      const rpts = (page.right?.points || []).map(p => ({ text: '•  ' + p, options: { fontSize: 15, color: hex(t.text), fontFace: 'Microsoft YaHei', paraSpaceAfter: 8 } }))
+      if (rpts.length) slide.addText(rpts, { x: 6.85, y: 2.0, w: 5.8, h: 4.5 })
+    } else if (page.type === 'animation') {
+      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
+      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
+      slide.addText(`[互动动画: ${page.template || ''}]`, { x: 1.5, y: 2.5, w: 10.3, h: 2, fontSize: 18, color: hex(t.text), align: 'center', italic: true, fontFace: 'Microsoft YaHei' })
+    } else if (page.type === 'image') {
+      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
+      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
+      if (page.image_base64) {
+        slide.addImage({ data: 'data:image/jpeg;base64,' + page.image_base64, x: 1.5, y: 1.5, w: 10.3, h: 4.8, sizing: { type: 'contain', w: 10.3, h: 4.8 } })
+      }
+      if (page.caption) slide.addText(page.caption, { x: 0.7, y: 6.5, w: 11.9, h: 0.4, fontSize: 12, color: hex(t.text), italic: true, align: 'center', fontFace: 'Microsoft YaHei' })
+    } else if (page.type === 'quote') {
+      slide.addText(page.text || '', { x: 1, y: 2.5, w: 11.3, h: 2, fontSize: 28, color: hex(t.accent), align: 'center', italic: true, fontFace: 'Microsoft YaHei' })
+    } else if (page.type === 'summary') {
+      slide.addText(page.title || '课程总结', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.text), fontFace: 'Microsoft YaHei' })
+      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
+      const items = (page.takeaways || []).map(tw => ({ text: '✓  ' + tw, options: { fontSize: 20, color: hex(t.accent), fontFace: 'Microsoft YaHei', paraSpaceAfter: 14 } }))
+      slide.addText(items, { x: 1.2, y: 1.6, w: 10, h: 4.5 })
+    }
   }
-})
+  await pptx.writeFile({ fileName: '课件.pptx' })
+}
 </script>
 
 <style scoped>
 .preview-panel {
-  height: 100%; display: flex; flex-direction: column; gap: 14px;
-  background: rgba(10, 10, 30, 0.5);
-  border: 1px solid rgba(79, 142, 247, 0.12);
-  border-radius: 16px; padding: 16px;
-  backdrop-filter: blur(10px);
+  height: 100%; display: flex; flex-direction: column; gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 16px; overflow: hidden;
 }
-
-.preview-header {
-  display: flex; justify-content: space-between; align-items: center;
-  flex-shrink: 0;
+.panel-header {
+  display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
 }
-.preview-title { font-size: 13px; font-weight: 600; color: rgba(226,232,248,0.7); }
+.panel-title {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 600; color: var(--text);
+}
 .slide-count {
-  font-size: 11px; font-family: 'JetBrains Mono', monospace;
-  color: #4F8EF7; background: rgba(79,142,247,0.1);
-  border: 1px solid rgba(79,142,247,0.2);
-  padding: 2px 8px; border-radius: 99px;
+  font-size: 11px; color: var(--teal);
+  background: var(--teal-light); padding: 2px 9px; border-radius: 99px;
 }
-
+.export-btn {
+  font-size: 11px; padding: 4px 12px; border-radius: var(--radius-sm);
+  background: var(--teal); color: white; border: none;
+  cursor: pointer; font-weight: 600; transition: background 0.2s;
+}
+.export-btn:hover { background: #0F766E; }
 .empty-state {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 10px; color: rgba(226,232,248,0.2);
+  gap: 12px; color: var(--text-3);
 }
-.empty-icon { font-size: 52px; opacity: 0.4; }
-.empty-title { font-size: 15px; font-weight: 500; color: rgba(226,232,248,0.3); }
-.empty-sub { font-size: 12px; }
-
-.loading-state {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 14px; color: rgba(226,232,248,0.4); font-size: 13px;
-}
-.load-ring {
-  width: 32px; height: 32px; border-radius: 50%;
-  border: 2px solid rgba(79,142,247,0.2);
-  border-top-color: #4F8EF7;
-  animation: spin 0.9s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
+.empty-icon { opacity: 0.5; }
+.empty-title { font-size: 15px; font-weight: 500; color: var(--text-2); }
+.empty-sub { font-size: 12px; color: var(--text-3); text-align: center; max-width: 240px; line-height: 1.5; }
 .thumb-strip {
-  display: flex; gap: 8px; overflow-x: auto; flex-shrink: 0;
-  padding-bottom: 6px;
+  display: flex; gap: 8px; overflow-x: auto; flex-shrink: 0; padding-bottom: 4px;
 }
 .thumb-strip::-webkit-scrollbar { height: 3px; }
-.thumb-strip::-webkit-scrollbar-thumb { background: rgba(79,142,247,0.3); border-radius: 2px; }
-
+.thumb-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .thumb {
   flex-shrink: 0; position: relative; cursor: pointer;
-  border-radius: 7px; overflow: hidden;
-  border: 2px solid transparent;
-  transition: all 0.2s;
+  border-radius: 6px; overflow: hidden;
+  border: 2px solid transparent; transition: all 0.2s;
+  width: 110px; height: 62px;
 }
-.thumb:hover { transform: translateY(-3px); border-color: rgba(79,142,247,0.4); box-shadow: 0 6px 16px rgba(0,0,0,0.3); }
-.thumb.active { border-color: #FFD700; box-shadow: 0 0 12px rgba(255,215,0,0.25); }
-.thumb-img { width: 110px; height: 62px; object-fit: cover; display: block; }
+.thumb-inner { width: 100%; height: 100%; }
+.thumb:hover { transform: translateY(-2px); border-color: var(--teal-mid); box-shadow: var(--shadow-md); }
+.thumb.active { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal-light); }
 .thumb-num {
   position: absolute; bottom: 3px; right: 4px;
-  font-size: 9px; font-family: 'JetBrains Mono', monospace;
-  color: rgba(255,255,255,0.7); background: rgba(0,0,0,0.5);
-  padding: 1px 4px; border-radius: 3px;
+  font-size: 9px; font-family: monospace;
+  color: white; background: rgba(0,0,0,0.45);
+  padding: 1px 4px; border-radius: 3px; z-index: 2;
 }
-
 .main-view {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  overflow: hidden;
+  flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden;
 }
-.main-img {
-  max-width: 100%; max-height: 100%; border-radius: 10px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(79,142,247,0.1);
-  object-fit: contain;
+.main-slide {
+  width: 100%; height: 100%; border-radius: 10px; overflow: hidden;
+  box-shadow: var(--shadow-lg);
 }
-
 .nav-bar {
   display: flex; align-items: center; justify-content: center;
   gap: 16px; flex-shrink: 0;
 }
 .nav-btn {
-  width: 32px; height: 32px; border-radius: 8px; border: none; cursor: pointer;
-  background: rgba(79,142,247,0.1); border: 1px solid rgba(79,142,247,0.2);
-  color: #4F8EF7; display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); cursor: pointer;
+  background: var(--bg); color: var(--text-2);
+  display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
 }
-.nav-btn:hover:not(:disabled) { background: rgba(79,142,247,0.2); box-shadow: 0 0 10px rgba(79,142,247,0.2); }
-.nav-btn:disabled { opacity: 0.25; cursor: not-allowed; }
-
-.page-counter { display: flex; align-items: baseline; gap: 4px; }
-.page-cur { font-size: 18px; font-weight: 700; color: #4F8EF7; font-family: 'JetBrains Mono', monospace; }
-.page-sep { font-size: 13px; color: rgba(226,232,248,0.25); }
-.page-total { font-size: 13px; color: rgba(226,232,248,0.4); font-family: 'JetBrains Mono', monospace; }
-
+.nav-btn:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); background: var(--teal-light); }
+.nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.page-counter { display: flex; align-items: baseline; gap: 3px; }
+.page-cur { font-size: 18px; font-weight: 700; color: var(--teal); font-family: monospace; }
+.page-sep { font-size: 13px; color: var(--text-3); }
+.page-total { font-size: 13px; color: var(--text-3); font-family: monospace; }
 .slide-fade-enter-active, .slide-fade-leave-active { transition: all 0.2s ease; }
-.slide-fade-enter-from { opacity: 0; transform: scale(0.98); }
-.slide-fade-leave-to { opacity: 0; transform: scale(1.01); }
+.slide-fade-enter-from { opacity: 0; transform: scale(0.99); }
+.slide-fade-leave-to { opacity: 0; }
 </style>

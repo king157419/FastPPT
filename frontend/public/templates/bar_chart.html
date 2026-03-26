@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>柱状图动画</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Microsoft YaHei", sans-serif; background: transparent; overflow: hidden; }
+.container {
+  width: 100%; height: 100vh; padding: 20px 24px 10px;
+  display: flex; flex-direction: column;
+}
+.title { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 12px; text-align: center; }
+.chart {
+  flex: 1; display: flex; align-items: flex-end; gap: 10px;
+  border-bottom: 2px solid #e2e8f0; padding-bottom: 0;
+}
+.bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bar {
+  width: 100%; border-radius: 4px 4px 0 0;
+  height: 0; transition: height 0.8s cubic-bezier(.34,1.56,.64,1);
+  position: relative;
+}
+.bar-value {
+  position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; font-weight: 700; white-space: nowrap;
+}
+.bar-label { font-size: 11px; color: #64748b; text-align: center; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="title" id="chartTitle"></div>
+  <div class="chart" id="chart"></div>
+</div>
+<script>
+let _d; try { _d = window.TEMPLATE_DATA || JSON.parse(decodeURIComponent(location.hash.slice(1))); } catch(e) { _d = null; }
+const data = _d || {
+  title: '各知识点掌握度',
+  accent: '#3b82f6',
+  labels: ['概念理解','公式推导','例题应用','综合分析'],
+  values: [85, 70, 90, 65],
+  colors: ['#3b82f6','#6366f1','#8b5cf6','#a855f7']
+};
+const maxVal = Math.max(...data.values);
+const chartHeight = document.querySelector('.container').offsetHeight - 80;
+
+document.getElementById('chartTitle').textContent = data.title || '';
+const chart = document.getElementById('chart');
+
+data.labels.forEach((label, i) => {
+  const color = (data.colors && data.colors[i]) || data.accent || '#3b82f6';
+  const pct = (data.values[i] / maxVal) * 100;
+  const group = document.createElement('div');
+  group.className = 'bar-group';
+  group.innerHTML = `
+    <div class="bar" id="bar_${i}" style="background:${color}">
+      <span class="bar-value" style="color:${color}">${data.values[i]}</span>
+    </div>
+    <div class="bar-label">${label}</div>`;
+  chart.appendChild(group);
+  setTimeout(() => {
+    const bar = document.getElementById(`bar_${i}`);
+    const targetH = Math.max(20, (pct / 100) * (window.innerHeight - 100));
+    bar.style.height = targetH + 'px';
+  }, 300 + i * 150);
+});
+</script>
+</body>
+</html>

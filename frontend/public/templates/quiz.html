@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>知识测验</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Microsoft YaHei", sans-serif; background: transparent; overflow: hidden; height: 100vh; }
+.container { height: 100vh; display: flex; flex-direction: column; padding: 14px 18px 10px; gap: 10px; }
+.header { display: flex; justify-content: space-between; align-items: center; }
+.qtitle { font-size: 13px; font-weight: 700; color: #1e293b; }
+.progress { font-size: 11px; color: #64748b; font-weight: 600; }
+.prog-bar { height: 4px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+.q-card {
+  background: white; border-radius: 10px; padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex-shrink: 0;
+  font-size: 13px; font-weight: 600; color: #1e293b; line-height: 1.5;
+}
+.options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.opt {
+  padding: 9px 12px; border-radius: 8px; border: 2px solid #e2e8f0;
+  background: white; font-size: 11.5px; font-weight: 500; color: #374151;
+  cursor: pointer; text-align: left; font-family: inherit;
+  transition: all 0.2s; line-height: 1.4;
+}
+.opt:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.opt.correct { border-color: #10b981; background: #d1fae5; color: #065f46; }
+.opt.wrong { border-color: #ef4444; background: #fee2e2; color: #991b1b; }
+.opt:disabled { cursor: not-allowed; }
+.explain { font-size: 11px; color: #6b7280; background: #f9fafb; border-radius: 6px; padding: 7px 10px; border-left: 3px solid #10b981; line-height: 1.5; }
+.next-btn {
+  align-self: flex-end; padding: 8px 20px; border-radius: 8px;
+  background: var(--accent); color: white; border: none;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.next-btn.show { opacity: 1; pointer-events: all; }
+.score-screen {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; text-align: center;
+}
+.score-ring { position: relative; width: 90px; height: 90px; }
+.score-ring svg { transform: rotate(-90deg); }
+.score-ring .track { fill: none; stroke: #e2e8f0; stroke-width: 8; }
+.score-ring .fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+.score-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.score-num { font-size: 24px; font-weight: 700; line-height: 1; }
+.score-den { font-size: 10px; color: #94a3b8; }
+.score-msg { font-size: 15px; font-weight: 700; color: #1e293b; }
+.score-sub { font-size: 11px; color: #64748b; }
+.retry-btn {
+  padding: 8px 22px; border-radius: 8px; background: var(--accent);
+  color: white; border: none; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; margin-top: 4px;
+}
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+<script>
+let d;
+try { d = window.TEMPLATE_DATA || JSON.parse(decodeURIComponent(location.hash.slice(1))); } catch(e) { d = null; }
+const data = d || {
+  title: '知识点测验', accent: '#3b82f6',
+  questions: [
+    { q: '以下哪种数据结构是有序可变序列？', options: ['元组 tuple','列表 list','集合 set','字典 dict'], answer: 1, explain: 'list 是 Python 中有序、可变的序列类型' },
+    { q: 'Python 定义函数的关键字是？', options: ['function','fun','def','func'], answer: 2, explain: 'Python 使用 def 关键字定义函数' },
+    { q: 'for 循环用于什么场景？', options: ['条件判断','遍历序列','定义变量','异常处理'], answer: 1, explain: 'for 循环用于遍历序列或可迭代对象' },
+  ]
+};
+const accent = data.accent || '#3b82f6';
+document.documentElement.style.setProperty('--accent', accent);
+document.documentElement.style.setProperty('--accent-bg', accent + '15');
+const qs = data.questions || [];
+let cur = 0, score = 0;
+
+function render() {
+  const app = document.getElementById('app');
+  if (cur >= qs.length) { renderScore(app); return; }
+  const q = qs[cur];
+  const pct = (cur / qs.length) * 100;
+  app.innerHTML = `
+    <div class="header">
+      <span class="qtitle">${data.title || '知识测验'}</span>
+      <span class="progress">${cur + 1} / ${qs.length}</span>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${accent}"></div></div>
+    <div class="q-card">${q.q}</div>
+    <div class="options">
+      ${q.options.map((opt, i) => `<button class="opt" data-i="${i}">${opt}</button>`).join('')}
+    </div>
+    <div class="explain" id="explain" style="display:none">${q.explain || ''}</div>
+    <button class="next-btn" id="nextBtn" onclick="next()">${cur < qs.length - 1 ? '下一题 →' : '查看结果'}</button>`;
+  app.querySelectorAll('.opt').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const chosen = +this.dataset.i;
+      app.querySelectorAll('.opt').forEach(b => {
+        b.disabled = true;
+        const idx = +b.dataset.i;
+        if (idx === q.answer) b.classList.add('correct');
+        else if (idx === chosen) b.classList.add('wrong');
+      });
+      if (chosen === q.answer) score++;
+      document.getElementById('explain').style.display = 'block';
+      document.getElementById('nextBtn').classList.add('show');
+    });
+  });
+}
+
+function next() { cur++; render(); }
+
+function renderScore(app) {
+  const pct = Math.round((score / qs.length) * 100);
+  const r = 36, circ = 2 * Math.PI * r;
+  const offset = circ * (1 - score / qs.length);
+  const msg = pct >= 80 ? '优秀！掌握扎实' : pct >= 60 ? '良好，继续加油' : '需要加强复习';
+  app.innerHTML = `
+    <div class="score-screen">
+      <div class="score-ring">
+        <svg width="90" height="90" viewBox="0 0 90 90">
+          <circle class="track" cx="45" cy="45" r="${r}"/>
+          <circle class="fill" cx="45" cy="45" r="${r}"
+            stroke="${accent}" stroke-dasharray="${circ}" stroke-dashoffset="${circ}" id="arc"/>
+        </svg>
+        <div class="score-center">
+          <div class="score-num" style="color:${accent}">${score}</div>
+          <div class="score-den">/ ${qs.length}</div>
+        </div>
+      </div>
+      <div class="score-msg">${msg}</div>
+      <div class="score-sub">正确率 ${pct}%</div>
+      <button class="retry-btn" onclick="restart()">重新答题</button>
+    </div>`;
+  setTimeout(() => {
+    const arc = document.getElementById('arc');
+    if (arc) arc.style.strokeDashoffset = offset;
+  }, 100);
+}
+
+function restart() { cur = 0; score = 0; render(); }
+render();
+</script>
+</body>
+</html>

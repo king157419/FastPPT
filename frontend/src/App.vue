@@ -1,26 +1,30 @@
 <template>
   <div class="app-shell">
-    <!-- 背景网格装饰 -->
-    <div class="bg-grid"></div>
-    <div class="bg-glow"></div>
-
-    <!-- 顶部品牌栏 -->
     <header class="app-header">
       <div class="header-inner">
         <div class="brand">
-          <span class="brand-icon">⚡</span>
+          <div class="brand-logo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="3" width="8" height="8" rx="2" fill="#0D9488"/>
+              <rect x="13" y="3" width="8" height="8" rx="2" fill="#0D9488" opacity="0.5"/>
+              <rect x="3" y="13" width="8" height="8" rx="2" fill="#0D9488" opacity="0.5"/>
+              <rect x="13" y="13" width="8" height="8" rx="2" fill="#0D9488"/>
+            </svg>
+          </div>
           <span class="brand-name">TeachMind</span>
-          <span class="brand-badge">AI</span>
         </div>
-        <div class="brand-tagline">智能备课 · 一键生成课件</div>
+        <div class="header-center">
+          <span class="tagline">AI 智能备课助手</span>
+        </div>
         <div class="header-status">
-          <span class="status-dot" :class="{ active: intentReady }"></span>
-          <span class="status-text">{{ intentReady ? '意图就绪' : '等待对话' }}</span>
+          <div class="status-pill" :class="{ ready: intentReady }">
+            <span class="status-dot"></span>
+            <span>{{ intentReady ? '准备生成' : '对话中' }}</span>
+          </div>
         </div>
       </div>
     </header>
 
-    <!-- 主体两栏 -->
     <main class="app-body">
       <aside class="left-panel">
         <FileUpload @uploaded="onUploaded" />
@@ -33,7 +37,7 @@
         />
       </aside>
       <section class="right-panel">
-        <PreviewPanel :pptxFilename="pptxFilename" />
+        <PreviewPanel :slidesJson="slidesJson" />
       </section>
     </main>
   </div>
@@ -49,106 +53,111 @@ import PreviewPanel from './components/PreviewPanel.vue'
 const intentReady = ref(false)
 const intent = ref(null)
 const fileIds = ref([])
-const pptxFilename = ref('')
+const slidesJson = ref(null)
 
-function onUploaded({ fileId }) {
-  fileIds.value.push(fileId)
-}
-function onIntentReady(data) {
-  intentReady.value = true
-  intent.value = data
-}
-function onGenerated(data) {
-  pptxFilename.value = data.pptx
-}
+function onUploaded({ fileId }) { fileIds.value.push(fileId) }
+function onIntentReady(data) { intentReady.value = true; intent.value = data }
+function onGenerated(data) { slidesJson.value = data.slides_json }
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body, #app { height: 100%; }
+
 body {
-  background: #080818;
-  color: #e2e8f8;
-  font-family: 'Sora', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: 'DM Sans', sans-serif;
+  background: #F7F6F3;
+  color: #1C1C1E;
   -webkit-font-smoothing: antialiased;
 }
 
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2a2a5a; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #4F8EF7; }
+:root {
+  --teal: #0D9488;
+  --teal-light: #CCFBF1;
+  --teal-mid: #14B8A6;
+  --bg: #F7F6F3;
+  --surface: #FFFFFF;
+  --border: #E8E6E1;
+  --text: #1C1C1E;
+  --text-2: #6B7280;
+  --text-3: #9CA3AF;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.04);
+  --radius: 12px;
+  --radius-sm: 8px;
+}
 
 .app-shell {
-  display: flex; flex-direction: column; height: 100vh;
-  position: relative; overflow: hidden;
-}
-
-.bg-grid {
-  position: fixed; inset: 0; z-index: 0;
-  background-image:
-    linear-gradient(rgba(79, 142, 247, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(79, 142, 247, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-}
-.bg-glow {
-  position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
-  width: 800px; height: 400px; z-index: 0;
-  background: radial-gradient(ellipse, rgba(79, 142, 247, 0.08) 0%, transparent 70%);
-  pointer-events: none;
+  display: flex; flex-direction: column;
+  height: 100vh; overflow: hidden;
+  background: var(--bg);
 }
 
 .app-header {
-  flex-shrink: 0; z-index: 10;
-  background: linear-gradient(135deg, rgba(79, 142, 247, 0.15), rgba(124, 58, 237, 0.12));
-  border-bottom: 1px solid rgba(79, 142, 247, 0.2);
-  backdrop-filter: blur(20px);
+  height: 56px; flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
 }
 .header-inner {
-  display: flex; align-items: center; gap: 16px;
-  padding: 10px 24px;
+  max-width: 100%; height: 100%;
+  display: flex; align-items: center;
+  padding: 0 24px; gap: 16px;
 }
-.brand { display: flex; align-items: center; gap: 8px; }
-.brand-icon { font-size: 20px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo {
+  width: 36px; height: 36px; background: var(--teal-light);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+}
 .brand-name {
-  font-size: 18px; font-weight: 700; letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #4F8EF7, #FFD700);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px; font-weight: 700;
+  color: var(--text); letter-spacing: -0.3px;
 }
-.brand-badge {
-  font-size: 10px; font-weight: 600; letter-spacing: 1px;
-  background: linear-gradient(135deg, #4F8EF7, #7C3AED);
-  color: white; padding: 2px 7px; border-radius: 99px;
-  -webkit-text-fill-color: white;
+.header-center { flex: 1; display: flex; justify-content: center; }
+.tagline {
+  font-size: 13px; color: var(--text-3);
+  font-weight: 400; letter-spacing: 0.2px;
 }
-.brand-tagline { font-size: 12px; color: rgba(226, 232, 248, 0.4); margin-left: 4px; }
-.header-status { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.header-status { margin-left: auto; }
+.status-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 99px;
+  font-size: 12px; font-weight: 500;
+  background: #F3F4F6; color: var(--text-2);
+  transition: all 0.3s;
+}
+.status-pill.ready { background: var(--teal-light); color: var(--teal); }
 .status-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #334; transition: background 0.4s;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-3); transition: background 0.3s;
 }
-.status-dot.active { background: #4ade80; box-shadow: 0 0 8px #4ade80; animation: pulse-green 2s infinite; }
-@keyframes pulse-green {
-  0%, 100% { box-shadow: 0 0 8px #4ade80; }
-  50% { box-shadow: 0 0 16px #4ade80; }
+.status-pill.ready .status-dot {
+  background: var(--teal);
+  box-shadow: 0 0 6px var(--teal);
+  animation: pulse 2s infinite;
 }
-.status-text { font-size: 11px; color: rgba(226, 232, 248, 0.5); font-family: 'JetBrains Mono', monospace; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; } 50% { opacity: 0.5; }
+}
 
 .app-body {
-  display: flex; flex: 1; overflow: hidden; gap: 0;
-  position: relative; z-index: 1;
+  display: flex; flex: 1; overflow: hidden;
 }
-
 .left-panel {
-  width: 460px; flex-shrink: 0;
-  display: flex; flex-direction: column; gap: 12px;
+  width: 420px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 10px;
   overflow-y: auto; padding: 16px;
-  border-right: 1px solid rgba(79, 142, 247, 0.1);
+  border-right: 1px solid var(--border);
+  background: var(--bg);
 }
-
+.left-panel::-webkit-scrollbar { width: 4px; }
+.left-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .right-panel {
   flex: 1; overflow: hidden; padding: 16px;
+  background: var(--bg);
 }
 </style>

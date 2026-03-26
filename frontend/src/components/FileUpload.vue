@@ -1,32 +1,43 @@
 <template>
   <div class="upload-area">
-    <div class="section-label">📎 参考资料</div>
+    <div class="panel-header">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>参考资料</span>
+      </div>
+      <span class="file-count" v-if="files.length">{{ files.length }} 个文件</span>
+    </div>
 
     <div
       class="drop-zone"
-      :class="{ dragging: isDragging, hasFiles: files.length > 0 }"
+      :class="{ dragging: isDragging }"
       @dragover.prevent="isDragging = true"
       @dragleave="isDragging = false"
       @drop.prevent="handleDrop"
       @click="triggerInput"
     >
-      <input ref="fileInput" type="file" multiple accept=".pdf,.docx,.doc,.pptx,.ppt,.txt,.md" style="display:none" @change="handleInputChange" />
-      <div class="drop-icon">⬆</div>
-      <div class="drop-text">拖拽文件或 <em>点击上传</em></div>
-      <div class="drop-hint">PDF · Word · PPT · TXT，≤ 200MB</div>
+      <input ref="fileInput" type="file" multiple accept=".pdf,.docx,.doc,.pptx,.ppt,.txt,.md,.jpg,.jpeg,.png,.webp,.mp4,.mov,.avi,.mkv" style="display:none" @change="handleInputChange" />
+      <div class="drop-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="17 8 12 3 7 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="drop-text">拖拽或 <em>点击上传</em></div>
+      <div class="drop-hint">PDF · Word · PPT · TXT · 图片 · 视频</div>
     </div>
 
     <TransitionGroup name="file-list" tag="div" class="file-list" v-if="files.length > 0">
       <div v-for="f in files" :key="f.uid" class="file-item" :class="f.status">
-        <span class="file-type-icon">{{ extIcon(f.name) }}</span>
+        <div class="file-icon" :style="{ background: extColor(f.name) }">{{ extLabel(f.name) }}</div>
         <span class="file-name">{{ f.name }}</span>
-        <span class="file-status">
-          <span v-if="f.status === 'uploading'" class="status-uploading">
-            <span class="spinner"></span> 解析中
-          </span>
-          <span v-else-if="f.status === 'done'" class="status-done">✓ {{ f.chunkCount }}块</span>
-          <span v-else-if="f.status === 'error'" class="status-error">✕ 失败</span>
-          <span v-else class="status-pending">待上传</span>
+        <span class="file-badge" :class="f.status">
+          <span v-if="f.status === 'uploading'" class="spinner"></span>
+          <span v-else-if="f.status === 'done'">✓</span>
+          <span v-else-if="f.status === 'error'">✕</span>
         </span>
       </div>
     </TransitionGroup>
@@ -43,104 +54,113 @@ const files = ref([])
 const isDragging = ref(false)
 const fileInput = ref(null)
 
-const EXT_ICONS = { pdf: '📄', docx: '📝', doc: '📝', pptx: '📊', ppt: '📊', txt: '📃', md: '📃' }
-function extIcon(name) {
-  const ext = name.split('.').pop().toLowerCase()
-  return EXT_ICONS[ext] || '📁'
+const EXT_COLORS = {
+  pdf: '#EF4444', docx: '#3B82F6', doc: '#3B82F6', pptx: '#F97316', ppt: '#F97316',
+  txt: '#6B7280', md: '#8B5CF6',
+  jpg: '#8B5CF6', jpeg: '#8B5CF6', png: '#8B5CF6', webp: '#8B5CF6', bmp: '#8B5CF6',
+  mp4: '#059669', mov: '#059669', avi: '#059669', mkv: '#059669', webm: '#059669',
+}
+const EXT_LABELS = {
+  pdf: 'PDF', docx: 'DOC', doc: 'DOC', pptx: 'PPT', ppt: 'PPT', txt: 'TXT', md: 'MD',
+  jpg: 'IMG', jpeg: 'IMG', png: 'IMG', webp: 'IMG', bmp: 'IMG',
+  mp4: 'VID', mov: 'VID', avi: 'VID', mkv: 'VID', webm: 'VID',
 }
 
+function extColor(name) { return EXT_COLORS[name.split('.').pop().toLowerCase()] || '#9CA3AF' }
+function extLabel(name) { return EXT_LABELS[name.split('.').pop().toLowerCase()] || 'FILE' }
 function triggerInput() { fileInput.value?.click() }
 
-function handleInputChange(e) {
-  [...e.target.files].forEach(processFile)
-  e.target.value = ''
-}
+function handleInputChange(e) { [...e.target.files].forEach(processFile) }
+function handleDrop(e) { isDragging.value = false; [...e.dataTransfer.files].forEach(processFile) }
 
-function handleDrop(e) {
-  isDragging.value = false
-  ;[...e.dataTransfer.files].forEach(processFile)
-}
-
-async function processFile(raw) {
+async function processFile(file) {
   const uid = Date.now() + Math.random()
-  const entry = { uid, name: raw.name, status: 'uploading', chunkCount: 0, fileId: null }
-  files.value.push(entry)
+  files.value.push({ uid, name: file.name, status: 'uploading', chunkCount: 0 })
   try {
-    const data = await uploadFile(raw)
-    entry.status = 'done'
-    entry.chunkCount = data.chunk_count
-    entry.fileId = data.file_id
-    ElMessage.success(`「${raw.name}」解析完成，${data.chunk_count} 块已入库`)
-    emit('uploaded', { fileId: data.file_id, summary: data.summary, filename: raw.name })
+    const data = await uploadFile(file)
+    const f = files.value.find(f => f.uid === uid)
+    if (f) { f.status = 'done'; f.chunkCount = data.chunk_count || 0 }
+    emit('uploaded', { fileId: data.file_id, summary: data.summary, filename: file.name })
   } catch (e) {
-    entry.status = 'error'
-    ElMessage.error(`「${raw.name}」上传失败：${e.response?.data?.detail || e.message}`)
+    const f = files.value.find(f => f.uid === uid)
+    if (f) f.status = 'error'
+    ElMessage.error('上传失败：' + (e.response?.data?.detail || e.message))
   }
 }
 </script>
 
 <style scoped>
-.upload-area { display: flex; flex-direction: column; gap: 8px; }
-.section-label { font-size: 11px; font-weight: 600; color: rgba(226, 232, 248, 0.4); letter-spacing: 0.8px; text-transform: uppercase; padding: 0 2px; }
-
+.upload-area {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-title {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 600; color: var(--text);
+}
+.file-count {
+  font-size: 11px; color: var(--text-3);
+  background: #F3F4F6; padding: 2px 8px; border-radius: 99px;
+}
 .drop-zone {
-  position: relative; border-radius: 12px; padding: 18px 16px;
-  cursor: pointer; text-align: center;
-  background: rgba(79, 142, 247, 0.03);
-  border: 1.5px dashed rgba(79, 142, 247, 0.25);
-  transition: all 0.25s;
-  background-image: none;
-  animation: dash-move 20s linear infinite;
+  margin: 12px; border-radius: var(--radius-sm);
+  border: 1.5px dashed var(--border);
+  padding: 20px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; transition: all 0.2s;
+  color: var(--text-3);
 }
-@keyframes dash-move {
-  0% { border-dash-offset: 0; }
-  100% { border-dash-offset: 40px; }
+.drop-zone:hover, .drop-zone.dragging {
+  border-color: var(--teal);
+  background: var(--teal-light);
+  color: var(--teal);
 }
-.drop-zone::before {
-  content: '';
-  position: absolute; inset: 0; border-radius: 12px;
-  background: linear-gradient(135deg, rgba(79,142,247,0.04), rgba(124,58,237,0.02));
-  opacity: 0; transition: opacity 0.25s;
-}
-.drop-zone:hover::before, .drop-zone.dragging::before { opacity: 1; }
-.drop-zone.dragging {
-  border-color: rgba(79, 142, 247, 0.6);
-  box-shadow: 0 0 20px rgba(79, 142, 247, 0.15), inset 0 0 20px rgba(79, 142, 247, 0.05);
-}
-.drop-zone:hover { border-color: rgba(79, 142, 247, 0.45); }
-
-.drop-icon { font-size: 22px; margin-bottom: 6px; opacity: 0.6; }
-.drop-text { font-size: 13px; color: rgba(226, 232, 248, 0.5); }
-.drop-text em { color: #4F8EF7; font-style: normal; font-weight: 500; }
-.drop-hint { font-size: 11px; color: rgba(226, 232, 248, 0.25); margin-top: 4px; }
-
-.file-list { display: flex; flex-direction: column; gap: 5px; }
+.drop-icon { font-size: 22px; margin-bottom: 4px; }
+.drop-text { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.drop-text em { color: var(--teal); font-style: normal; font-weight: 600; }
+.drop-hint { font-size: 11px; color: var(--text-3); }
+.file-list { display: flex; flex-direction: column; gap: 4px; padding: 0 12px 12px; }
 .file-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 7px 10px; border-radius: 8px;
-  border: 1px solid rgba(79, 142, 247, 0.1);
-  background: rgba(255, 255, 255, 0.02);
-  transition: all 0.3s;
+  padding: 7px 10px; border-radius: var(--radius-sm);
+  background: var(--bg); border: 1px solid var(--border);
+  transition: all 0.2s;
 }
-.file-item.done { border-color: rgba(74, 222, 128, 0.2); background: rgba(74, 222, 128, 0.03); }
-.file-item.error { border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.03); }
-
-.file-type-icon { font-size: 15px; flex-shrink: 0; }
-.file-name { flex: 1; font-size: 12px; color: rgba(226, 232, 248, 0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.file-status { flex-shrink: 0; font-size: 11px; }
-.status-uploading { display: flex; align-items: center; gap: 5px; color: #4F8EF7; }
+.file-item.done { border-color: #D1FAE5; background: #F0FDF4; }
+.file-item.error { border-color: #FEE2E2; background: #FFF5F5; }
+.file-icon {
+  width: 28px; height: 20px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 700; color: white; flex-shrink: 0;
+  letter-spacing: 0.3px;
+}
+.file-name {
+  flex: 1; font-size: 12px; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.file-badge {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.file-badge.done { background: #D1FAE5; color: #059669; }
+.file-badge.error { background: #FEE2E2; color: #DC2626; }
+.file-badge.uploading { background: var(--teal-light); }
 .spinner {
   width: 10px; height: 10px; border-radius: 50%;
-  border: 1.5px solid rgba(79,142,247,0.3);
-  border-top-color: #4F8EF7;
+  border: 1.5px solid rgba(13,148,136,0.3);
+  border-top-color: var(--teal);
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.status-done { color: #4ade80; font-weight: 600; }
-.status-error { color: #f87171; }
-.status-pending { color: rgba(226,232,248,0.3); }
-
-.file-list-enter-active { transition: all 0.3s ease; }
-.file-list-enter-from { opacity: 0; transform: translateY(-6px); }
+.file-list-enter-active { transition: all 0.25s ease; }
+.file-list-enter-from { opacity: 0; transform: translateY(-4px); }
 </style>

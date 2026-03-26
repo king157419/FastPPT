@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>知识点卡片</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Microsoft YaHei", sans-serif; background: transparent; overflow: hidden; }
+.container {
+  width: 100%; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 16px; padding: 20px;
+}
+.card-wrap { perspective: 800px; cursor: pointer; }
+.card {
+  width: 140px; height: 90px; position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease;
+}
+.card.flipped { transform: rotateY(180deg); }
+.card-front, .card-back {
+  position: absolute; inset: 0;
+  border-radius: 10px; backface-visibility: hidden;
+  display: flex; align-items: center; justify-content: center;
+  padding: 10px; text-align: center;
+}
+.card-front {
+  color: white; font-size: 13px; font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.card-back {
+  background: #f8fafc; color: #1e293b;
+  font-size: 11px; line-height: 1.5;
+  transform: rotateY(180deg);
+  border: 2px solid var(--accent, #3b82f6);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.card-num {
+  position: absolute; top: 6px; right: 8px;
+  font-size: 9px; opacity: 0.6; font-weight: 700;
+}
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+<script>
+let _d; try { _d = window.TEMPLATE_DATA || JSON.parse(decodeURIComponent(location.hash.slice(1))); } catch(e) { _d = null; }
+const data = _d || {
+  accent: '#3b82f6',
+  cards: [
+    { term: '封装', def: '隐藏内部实现细节，只暴露必要接口' },
+    { term: '继承', def: '子类复用父类属性与方法' },
+    { term: '多态', def: '同一接口，不同实现行为' },
+    { term: '抽象', def: '提取共同特征，忽略细节差异' },
+  ],
+  colors: ['#3b82f6','#6366f1','#8b5cf6','#a855f7','#ec4899','#f59e0b','#10b981','#ef4444']
+};
+const app = document.getElementById('app');
+const accent = data.accent || '#3b82f6';
+document.documentElement.style.setProperty('--accent', accent);
+
+data.cards.forEach((card, i) => {
+  const color = (data.colors && data.colors[i % data.colors.length]) || accent;
+  const wrap = document.createElement('div');
+  wrap.className = 'card-wrap';
+  wrap.innerHTML = `
+    <div class="card" id="card_${i}">
+      <div class="card-front" style="background:${color}">
+        <span class="card-num">${i+1}/${data.cards.length}</span>
+        ${card.term}
+      </div>
+      <div class="card-back">${card.def}</div>
+    </div>`;
+  wrap.addEventListener('click', () => {
+    document.getElementById(`card_${i}`)?.classList.toggle('flipped');
+  });
+  app.appendChild(wrap);
+});
+
+// 自动逐一翻转展示
+let autoIdx = 0;
+function autoFlip() {
+  const cards = document.querySelectorAll('.card');
+  cards.forEach(c => c.classList.remove('flipped'));
+  setTimeout(() => {
+    cards[autoIdx]?.classList.add('flipped');
+    autoIdx = (autoIdx + 1) % cards.length;
+  }, 300);
+}
+setInterval(autoFlip, 2000);
+</script>
+</body>
+</html>
