@@ -92,7 +92,7 @@ def _toc_slide(prs, key_points):
     return slide
 
 
-def _content_slide(prs, title, bullets, rag_context=""):
+def _content_slide(prs, title, bullets, rag_context="", tip=""):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     _add_bg(slide, prs)
     _add_rect(slide, 0, 0, Inches(0.5), SLIDE_H, COLOR_HL)
@@ -111,11 +111,15 @@ def _content_slide(prs, title, bullets, rag_context=""):
         _add_textbox(slide, b,
                      Inches(1.1), y, Inches(11.2), Inches(0.75),
                      font_size=20, color=COLOR_WHITE)
-    # RAG 参考（右下角小字）
-    if rag_context:
+    # 教师提示（右下角黄色小字）
+    if tip:
+        _add_textbox(slide, f"💡 {tip}",
+                     Inches(0.8), Inches(6.75), Inches(11.5), Inches(0.45),
+                     font_size=12, color=COLOR_YELLOW)
+    elif rag_context:
         snippet = rag_context[:80] + "..." if len(rag_context) > 80 else rag_context
-        _add_textbox(slide, f"📚 参考：{snippet}",
-                     Inches(0.8), Inches(6.8), Inches(11.5), Inches(0.45),
+        _add_textbox(slide, f"📚 {snippet}",
+                     Inches(0.8), Inches(6.75), Inches(11.5), Inches(0.45),
                      font_size=11, color=COLOR_LIGHT)
     return slide
 
@@ -141,9 +145,10 @@ def _summary_slide(prs, topic, key_points):
     return slide
 
 
-def generate_pptx(intent: dict, rag_chunks: list[str], output_path: str) -> str:
+def generate_pptx(intent: dict, slide_contents: list[dict], output_path: str) -> str:
     """
-    根据 intent JSON 和 RAG 检索结果生成 .pptx 文件。
+    根据 intent JSON 和 slide_contents 生成 .pptx 文件。
+    slide_contents: [{"key_point": str, "bullets": [str], "tip": str, "rag_ctx": str}]
     返回输出文件路径。
     """
     topic = intent.get("topic", "未知主题")
@@ -158,15 +163,12 @@ def generate_pptx(intent: dict, rag_chunks: list[str], output_path: str) -> str:
     _cover_slide(prs, topic, audience, duration)
     _toc_slide(prs, key_points)
 
-    for i, kp in enumerate(key_points):
-        rag_ctx = rag_chunks[i] if i < len(rag_chunks) else ""
-        bullets = [
-            f"{kp}的基本概念与定义",
-            f"{kp}的核心原理与机制",
-            f"{kp}在实际场景中的应用",
-            f"常见问题与解决思路",
-        ]
-        _content_slide(prs, f"{i+1}. {kp}", bullets, rag_ctx)
+    for i, sc in enumerate(slide_contents):
+        kp = sc.get("key_point", key_points[i] if i < len(key_points) else f"知识点{i+1}")
+        bullets = sc.get("bullets", [f"{kp}的核心内容"])
+        tip = sc.get("tip", "")
+        rag_ctx = sc.get("rag_ctx", "")
+        _content_slide(prs, f"{i+1}. {kp}", bullets, rag_ctx, tip)
 
     _summary_slide(prs, topic, key_points)
 

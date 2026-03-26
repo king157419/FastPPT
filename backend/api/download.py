@@ -25,9 +25,25 @@ def preview_pptx(filename: str):
 
     try:
         from pptx import Presentation
-        from pptx.util import Inches
         from PIL import Image, ImageDraw, ImageFont
         import io
+
+        # 加载中文字体，fallback 顺序
+        def _load_font(size: int):
+            for path in [
+                "C:/Windows/Fonts/msyh.ttc",
+                "C:/Windows/Fonts/simhei.ttf",
+                "C:/Windows/Fonts/simsun.ttc",
+            ]:
+                try:
+                    return ImageFont.truetype(path, size)
+                except Exception:
+                    continue
+            return ImageFont.load_default()
+
+        font_title = _load_font(30)
+        font_body = _load_font(19)
+        font_page = _load_font(15)
 
         prs = Presentation(path)
         slides_data = []
@@ -46,20 +62,22 @@ def preview_pptx(filename: str):
                         if t:
                             texts.append(t)
 
-            # 绘制页码
+            # 顶部金色装饰条 + 页码
             draw.rectangle([0, 0, 960, 6], fill=(255, 215, 0))
-            draw.text((20, 20), f"第 {i+1} 页", fill=(180, 196, 222))
+            draw.text((20, 16), f"第 {i+1} 页", fill=(180, 196, 222), font=font_page)
 
             # 绘制文字内容
-            y = 60
+            y = 56
             for j, text in enumerate(texts[:8]):
-                if y > 480:
+                if y > 490:
                     break
-                snippet = text[:60] + "..." if len(text) > 60 else text
-                font_size = 28 if j == 0 else 18
-                color = (255, 215, 0) if j == 0 else (255, 255, 255)
-                draw.text((40, y), snippet, fill=color)
-                y += font_size + 12
+                snippet = text[:50] + "..." if len(text) > 50 else text
+                if j == 0:
+                    draw.text((40, y), snippet, fill=(255, 215, 0), font=font_title)
+                    y += 42
+                else:
+                    draw.text((48, y), f"• {snippet}", fill=(210, 220, 240), font=font_body)
+                    y += 30
 
             # 转 base64
             buf = io.BytesIO()
