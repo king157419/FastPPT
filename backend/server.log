@@ -231,3 +231,119 @@ INFO:     127.0.0.1:55496 - "GET /health HTTP/1.1" 200 OK
 INFO:     127.0.0.1:56191 - "GET /health HTTP/1.1" 200 OK
 [LLM] DeepSeek failed (Error code: 402 - {'error': {'message': 'Insufficient Balance', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}), trying DashScope
 INFO:     127.0.0.1:50966 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53589 - "POST /api/chat HTTP/1.1" 400 Bad Request
+[LLM] DeepSeek failed (Error code: 402 - {'error': {'message': 'Insufficient Balance', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}), trying DashScope
+INFO:     127.0.0.1:61167 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+[LLM] DeepSeek failed (Error code: 402 - {'error': {'message': 'Insufficient Balance', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}), trying DashScope
+INFO:     127.0.0.1:63310 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:62378 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64045 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56978 - "POST /api/chat HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:54696 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62866 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-session-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:58496 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53602 - "GET /api/retrieval/documents HTTP/1.1" 400 Bad Request
+Chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent chat failed - session_id: 1018eaee-d734-4828-9d91-0ceb09c562de, error: 对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:53604 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:60578 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: 16fde2e2-71c3-42b8-9987-255ab950f399, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:56065 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: b3c3465d-de13-48e1-86ab-cfcfabf66baf, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:63378 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: be285df0-062c-4e51-a9e1-d3f7a637f7cc, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:54121 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60952 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-frontend-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:55403 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-frontend-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:61021 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-frontend-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:51146 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-frontend-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:57656 - "GET /api/retrieval/documents HTTP/1.1" 400 Bad Request
+Chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent chat failed - session_id: 9b042e36-79b6-4c33-a749-f8a6711079ee, error: 对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:57658 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:49240 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: 33364ad8-2d07-4f49-b3be-5f11bafa0044, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:64805 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: 28fcfc84-507b-4c10-99ed-f049e04c9306, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:54681 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-frontend-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:59051 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-curl-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent chat failed - session_id: test-debug-001, error: 对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:60140 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:51146 - "GET /api/retrieval/documents HTTP/1.1" 400 Bad Request
+Chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent chat failed - session_id: ce0be82d-2186-4bd4-936a-36df8401f30f, error: 对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:51147 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:52293 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64791 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58206 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63221 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50456 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53342 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63988 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63992 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-frontend-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:61777 - "POST /api/generate/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58556 - "GET /api/generate/c890fb77/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58540 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-frontend-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:58568 - "POST /api/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51421 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-frontend-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+[LLM] DeepSeek failed (Connection error.), trying DashScope
+INFO:     127.0.0.1:60420 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-frontend-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:50386 - "POST /api/generate HTTP/1.1" 200 OK
+Chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent chat failed - session_id: c4f1410d-02f0-4608-b13d-81e8df1d9331, error: 对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:61898 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+Chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent chat failed - session_id: 19fcff44-3239-4f2f-8a71-3b52c40a024f, error: 对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:52820 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+Chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent chat failed - session_id: 1dd30ad6-4c9e-41a2-8135-f0b51c77df0f, error: 对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:61563 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+Chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent chat failed - session_id: 2fca3a78-0978-4a4c-a035-7e29af6a7992, error: 对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:51150 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+Chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent chat failed - session_id: ac51a6d7-b5eb-49dc-a0b1-94256033c519, error: 对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:53729 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+Chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent chat failed - session_id: 1f954c59-959d-4104-a0b9-cc0ec91bcc88, error: 对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:53458 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+Chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent chat failed - session_id: 860faacc-7545-4fd0-8180-aa0dc3d0bd88, error: 对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:64557 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+Chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent chat failed - session_id: 24765e3b-9b5c-463b-bb80-0aefd8253a5d, error: 对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:59006 - "POST /api/chat HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53802 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-frontend-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+INFO:     127.0.0.1:49282 - "POST /api/chat HTTP/1.1" 200 OK
+Streaming chat failed: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.
+Agent streaming failed - session_id: test-frontend-001, error: 流式对话失败: Error Multiple exceptions: [Errno 10061] Connect call failed ('::1', 6379, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 6379) connecting to localhost:6379.

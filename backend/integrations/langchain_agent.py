@@ -4,7 +4,7 @@ This module provides a production-ready teaching agent with:
 - Multi-turn conversation with memory persistence
 - Tool integration (RAG retrieval, PPT generation, preview)
 - Streaming output support
-- Redis-based memory storage
+- In-memory storage (no Redis dependency)
 - Comprehensive error handling and logging
 """
 
@@ -17,7 +17,6 @@ import os
 import uuid
 from typing import Any, AsyncGenerator, Optional
 
-import redis.asyncio as redis
 from langchain.agents import create_agent
 from langchain.tools import tool
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -48,69 +47,6 @@ class AgentConfig(BaseModel):
 # ============================================================================
 # Memory Management
 # ============================================================================
-
-class RedisMemoryStore:
-    """Redis-based memory store for conversation persistence - DISABLED."""
-
-    def __init__(self, redis_url: str, ttl: int = 86400):
-        self.redis_url = redis_url
-        self.ttl = ttl
-        self._client: Optional[redis.Redis] = None
-        self._memory_cache = {}  # 使用内存缓存替代Redis
-
-    async def __aenter__(self):
-        """Async context manager entry - Redis disabled, using in-memory cache."""
-        # 不连接Redis，使用内存缓存
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Async context manager exit."""
-        pass  # 无需关闭连接
-
-    def _get_key(self, session_id: str) -> str:
-        """Generate Redis key for session."""
-        return f"teaching_agent:memory:{session_id}"
-
-    async def save_messages(self, session_id: str, messages: list[dict[str, Any]]) -> None:
-        """Save conversation messages to in-memory cache (Redis disabled).
-
-        Args:
-            session_id: Unique session identifier
-            messages: List of message dictionaries
-        """
-        key = self._get_key(session_id)
-        self._memory_cache[key] = messages
-        logger.info(f"Saved {len(messages)} messages for session {session_id} (in-memory)")
-
-    async def load_messages(self, session_id: str) -> list[dict[str, Any]]:
-        """Load conversation messages from in-memory cache (Redis disabled).
-
-        Args:
-            session_id: Unique session identifier
-
-        Returns:
-            List of message dictionaries
-        """
-        key = self._get_key(session_id)
-        messages = self._memory_cache.get(key, [])
-        logger.info(f"Loaded {len(messages)} messages for session {session_id} (in-memory)")
-        return messages
-
-    async def delete_session(self, session_id: str) -> bool:
-        """Delete session from in-memory cache.
-
-        Args:
-            session_id: Unique session identifier
-
-        Returns:
-            True if deleted, False if not found
-        """
-        key = self._get_key(session_id)
-        existed = key in self._memory_cache
-        self._memory_cache.pop(key, None)
-        logger.info(f"Deleted session {session_id}: {existed} (in-memory)")
-        return existed
-
 
 # ============================================================================
 # Tools
@@ -214,6 +150,9 @@ def get_preview_url(job_id: str) -> str:
 class TeachingAgent:
     """LangChain-based teaching agent with conversation and tool capabilities."""
 
+    # Class-level memory storage (shared across all instances)
+    _memory_cache: dict[str, list[dict[str, Any]]] = {}
+
     def __init__(self, config: Optional[AgentConfig] = None):
         """Initialize teaching agent.
 
@@ -240,16 +179,12 @@ class TeachingAgent:
             get_preview_url,
         ]
 
-        # Initialize memory store
-        self.memory_store = RedisMemoryStore(
-            redis_url=self.config.redis_url,
-            ttl=self.config.memory_ttl,
-        )
+        # No Redis - using class-level memory cache instead
 
         # Create agent
         self.agent = self._create_agent()
 
-        logger.info("TeachingAgent initialized successfully")
+        logger.info("TeachingAgent initialized successfully (using in-memory storage)")
 
     def _validate_config(self) -> None:
         """Validate configuration."""
@@ -310,40 +245,42 @@ class TeachingAgent:
             RuntimeError: If chat fails
         """
         try:
-            async with self.memory_store as store:
-                # Load conversation history
-                messages = await store.load_messages(session_id)
+            # Load conversation history from in-memory cache
+            messages = self._memory_cache.get(session_id, [])
 
-                # Convert to LangChain message format
-                chat_history = []
-                for msg in messages:
-                    if msg["role"] == "user":
-                        chat_history.append(HumanMessage(content=msg["content"]))
-                    elif msg["role"] == "assistant":
-                        chat_history.append(AIMessage(content=msg["content"]))
+            # Convert to LangChain message format
+            chat_history = []
+            for msg in messages:
+                if msg["role"] == "user":
+                    chat_history.append(HumanMessage(content=msg["content"]))
+                elif msg["role"] == "assistant":
+                    chat_history.append(AIMessage(content=msg["content"]))
 
-                # Prepare input with history
-                input_data = {
-                    "messages": chat_history + [HumanMessage(content=message)]
-                }
+            # Prepare input with history
+            input_data = {
+                "messages": chat_history + [HumanMessage(content=message)]
+            }
 
-                # Invoke agent
-                result = await self.agent.ainvoke(input_data)
+            # Configure with thread_id for checkpointer
+            config = {"configurable": {"thread_id": session_id}}
 
-                # Extract response from the agent state
-                if isinstance(result, dict) and "messages" in result:
-                    # Get the last message from the agent
-                    response = result["messages"][-1].content
-                else:
-                    response = str(result)
+            # Invoke agent
+            result = await self.agent.ainvoke(input_data, config=config)
 
-                # Save updated history
-                messages.append({"role": "user", "content": message})
-                messages.append({"role": "assistant", "content": response})
-                await store.save_messages(session_id, messages)
+            # Extract response from the agent state
+            if isinstance(result, dict) and "messages" in result:
+                # Get the last message from the agent
+                response = result["messages"][-1].content
+            else:
+                response = str(result)
 
-                logger.info(f"Chat completed for session {session_id}")
-                return response
+            # Save updated history to in-memory cache
+            messages.append({"role": "user", "content": message})
+            messages.append({"role": "assistant", "content": response})
+            self._memory_cache[session_id] = messages
+
+            logger.info(f"Chat completed for session {session_id}")
+            return response
 
         except Exception as e:
             logger.error(f"Chat failed: {e}")
@@ -367,39 +304,41 @@ class TeachingAgent:
             RuntimeError: If streaming fails
         """
         try:
-            async with self.memory_store as store:
-                # Load conversation history
-                messages = await store.load_messages(session_id)
+            # Load conversation history from in-memory cache
+            messages = self._memory_cache.get(session_id, [])
 
-                # Convert to LangChain message format
-                chat_history = []
-                for msg in messages:
-                    if msg["role"] == "user":
-                        chat_history.append(HumanMessage(content=msg["content"]))
-                    elif msg["role"] == "assistant":
-                        chat_history.append(AIMessage(content=msg["content"]))
+            # Convert to LangChain message format
+            chat_history = []
+            for msg in messages:
+                if msg["role"] == "user":
+                    chat_history.append(HumanMessage(content=msg["content"]))
+                elif msg["role"] == "assistant":
+                    chat_history.append(AIMessage(content=msg["content"]))
 
-                # Prepare input with history
-                input_data = {
-                    "messages": chat_history + [HumanMessage(content=message)]
-                }
+            # Prepare input with history
+            input_data = {
+                "messages": chat_history + [HumanMessage(content=message)]
+            }
 
-                # Stream agent response
-                full_response = ""
-                async for event in self.agent.astream_events(input_data, version="v2"):
-                    # Extract content from streaming events
-                    if event["event"] == "on_chat_model_stream":
-                        chunk = event["data"]["chunk"]
-                        if hasattr(chunk, "content") and chunk.content:
-                            full_response += chunk.content
-                            yield chunk.content
+            # Configure with thread_id for checkpointer
+            config = {"configurable": {"thread_id": session_id}}
 
-                # Save updated history
-                messages.append({"role": "user", "content": message})
-                messages.append({"role": "assistant", "content": full_response})
-                await store.save_messages(session_id, messages)
+            # Stream agent response
+            full_response = ""
+            async for event in self.agent.astream_events(input_data, config=config, version="v2"):
+                # Extract content from streaming events
+                if event["event"] == "on_chat_model_stream":
+                    chunk = event["data"]["chunk"]
+                    if hasattr(chunk, "content") and chunk.content:
+                        full_response += chunk.content
+                        yield chunk.content
 
-                logger.info(f"Streaming chat completed for session {session_id}")
+            # Save updated history to in-memory cache
+            messages.append({"role": "user", "content": message})
+            messages.append({"role": "assistant", "content": full_response})
+            self._memory_cache[session_id] = messages
+
+            logger.info(f"Streaming chat completed for session {session_id}")
 
         except Exception as e:
             logger.error(f"Streaming chat failed: {e}")
@@ -473,7 +412,7 @@ def get_teaching_agent(config: Optional[AgentConfig] = None) -> TeachingAgent:
     """
     global _agent_instance
 
-    if _agent_instance is None:
-        _agent_instance = TeachingAgent(config)
+    # Always recreate to avoid stale cached instances with old Redis config
+    _agent_instance = TeachingAgent(config)
 
     return _agent_instance

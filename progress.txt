@@ -1,0 +1,24 @@
+# FastPPT 后端生产级改进 - 进度记录
+
+## 开始时间
+2026-04-22 00:30
+
+## 任务概述
+完成 FastPPT 后端的生产级改进，包括：
+1. RAG 系统升级到向量检索
+2. LangChain Agent 集成
+3. PptxGenJS 服务
+4. Docker 部署和监控
+
+## 基础信息
+- 现有核心模块：teaching_spec.py (9/10), slide_blocks.py (9/10)
+- 现有 API：chat.py (8/10), generate.py (8/10)
+- 现有基础设施：llm.py, rag.py, ppt_gen.py, doc_gen.py
+
+## 迭代记录
+
+### 迭代 1 - PRD 设置
+- 创建 prd.json，定义 4 个核心 story
+- 创建 progress.txt 记录进度
+- 准备开始实现
+
