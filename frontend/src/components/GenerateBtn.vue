@@ -1,9 +1,42 @@
 <template>
   <div class="generate-area">
+    <div v-if="intentReady" class="preflight-card">
+      <div class="preflight-title">生成前确认</div>
+      <div class="preflight-grid">
+        <label class="field">
+          <span>教学目标</span>
+          <textarea
+            v-model="teachingGoal"
+            rows="2"
+            placeholder="例如：理解XX概念，并能在XX问题中应用"
+          />
+        </label>
+        <label class="field">
+          <span>面向学生类型</span>
+          <input
+            v-model="audienceField"
+            type="text"
+            placeholder="例如：大一本科生"
+          />
+        </label>
+        <label class="field">
+          <span>重点难点</span>
+          <input
+            v-model="difficultyField"
+            type="text"
+            placeholder="例如：概念区分与公式应用"
+          />
+        </label>
+      </div>
+      <div v-if="missingFields.length" class="preflight-warning">
+        缺少必填项：{{ missingFields.join('、') }}
+      </div>
+    </div>
+
     <button
       class="gen-btn"
-      :class="{ loading: generating, ready: intentReady && !generating }"
-      :disabled="!intentReady || generating"
+      :class="{ loading: generating, ready: canGenerate }"
+      :disabled="!canGenerate || generating"
       @click="handleGenerate"
     >
       <span v-if="generating" class="btn-spinner"></span>
@@ -13,6 +46,7 @@
       {{ generating ? progressMsg || '正在生成课件...' : '生成课件' }}
     </button>
     <p v-if="!intentReady" class="hint">完成对话后解锁</p>
+    <p v-else-if="missingFields.length" class="hint warn">请先补齐生成前必填项</p>
 
     <Transition name="result-fade">
       <div v-if="generating" class="progress-bar-wrap">
@@ -43,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { startGenerate, generateCourse, downloadUrl, generateStreamUrl } from '../api/index.js'
 import { ElMessage } from 'element-plus'
 
@@ -57,18 +91,54 @@ const generating = ref(false)
 const progress = ref(0)
 const progressMsg = ref('')
 const result = ref(null)
+const teachingGoal = ref('')
+const audienceField = ref('')
+const difficultyField = ref('')
 
 const docxUrl = computed(() => result.value ? downloadUrl(result.value.docx) : '#')
+const missingFields = computed(() => {
+  const missing = []
+  if (!teachingGoal.value.trim()) missing.push('教学目标')
+  if (!audienceField.value.trim()) missing.push('面向学生类型')
+  if (!difficultyField.value.trim()) missing.push('重点难点')
+  return missing
+})
+const canGenerate = computed(() => props.intentReady && missingFields.value.length === 0 && !generating.value)
+
+watch(
+  () => props.intent,
+  (intent) => {
+    teachingGoal.value = intent?.teaching_goal || ''
+    audienceField.value = intent?.audience || ''
+    difficultyField.value = intent?.difficulty_focus || ''
+  },
+  { immediate: true, deep: true },
+)
+
+function buildEffectiveIntent() {
+  return {
+    ...(props.intent || {}),
+    teaching_goal: teachingGoal.value.trim(),
+    audience: audienceField.value.trim(),
+    difficulty_focus: difficultyField.value.trim(),
+  }
+}
 
 async function handleGenerate() {
+  if (missingFields.value.length) {
+    ElMessage.warning(`请先补齐：${missingFields.value.join('、')}`)
+    return
+  }
+
   generating.value = true
   result.value = null
   progress.value = 0
   progressMsg.value = '准备中...'
+  const effectiveIntent = buildEffectiveIntent()
 
   try {
     // 尝试异步 SSE 模式
-    const { job_id } = await startGenerate(props.intent, props.fileIds || [])
+    const { job_id } = await startGenerate(effectiveIntent, props.fileIds || [])
     await new Promise((resolve, reject) => {
       const es = new EventSource(generateStreamUrl(job_id))
       es.onmessage = (e) => {
@@ -90,7 +160,7 @@ async function handleGenerate() {
     // fallback 同步模式
     try {
       progressMsg.value = '正在生成...'
-      const data = await generateCourse(props.intent, props.fileIds || [])
+      const data = await generateCourse(effectiveIntent, props.fileIds || [])
       result.value = data
       progress.value = 100
       ElMessage.success(data.message)
@@ -106,6 +176,59 @@ async function handleGenerate() {
 
 <style scoped>
 .generate-area { display: flex; flex-direction: column; gap: 8px; }
+
+.preflight-card {
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 10px;
+}
+.preflight-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.preflight-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field span {
+  font-size: 11px;
+  color: var(--text-2);
+}
+.field input,
+.field textarea {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+  background: #fafafa;
+}
+.field input:focus,
+.field textarea:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px rgba(13,148,136,0.1);
+  background: #fff;
+}
+.preflight-warning {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 5px 8px;
+}
 
 .gen-btn {
   width: 100%; height: 46px;
@@ -137,6 +260,7 @@ async function handleGenerate() {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .hint { font-size: 11px; color: var(--text-3); text-align: center; }
+.hint.warn { color: #b45309; }
 
 .progress-bar-wrap {
   position: relative; height: 6px;

@@ -1,0 +1,10 @@
+{
+  "active": false,
+  "iteration": 1,
+  "max_iterations": 10,
+  "current_phase": "complete",
+  "started_at": "2026-04-21T16:38:22.6405572Z",
+  "task_description": "Block rendering refactor for frontend preview/export to block-first architecture",
+  "context_snapshot_path": ".omx/context/block-rendering-refactor-20260421T163710Z.md",
+  "completed_at": "2026-04-21T16:40:45.0000000Z"
+}

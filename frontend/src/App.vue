@@ -28,7 +28,11 @@
     <main class="app-body">
       <aside class="left-panel">
         <FileUpload @uploaded="onUploaded" />
-        <ChatPanel @intentReady="onIntentReady" />
+        <DocumentPanel @insertPrompt="onInsertPrompt" />
+        <ChatPanel
+          :prefillPayload="chatPrefill"
+          @intentReady="onIntentReady"
+        />
         <GenerateBtn
           :intentReady="intentReady"
           :intent="intent"
@@ -46,6 +50,7 @@
 <script setup>
 import { ref } from 'vue'
 import FileUpload from './components/FileUpload.vue'
+import DocumentPanel from './components/DocumentPanel.vue'
 import ChatPanel from './components/ChatPanel.vue'
 import GenerateBtn from './components/GenerateBtn.vue'
 import PreviewPanel from './components/PreviewPanel.vue'
@@ -54,10 +59,14 @@ const intentReady = ref(false)
 const intent = ref(null)
 const fileIds = ref([])
 const slidesJson = ref(null)
+const chatPrefill = ref(null)
 
 function onUploaded({ fileId }) { fileIds.value.push(fileId) }
 function onIntentReady(data) { intentReady.value = true; intent.value = data }
 function onGenerated(data) { slidesJson.value = data.slides_json }
+function onInsertPrompt(text) {
+  chatPrefill.value = { text, nonce: Date.now() }
+}
 </script>
 
 <style>
@@ -159,5 +168,27 @@ body {
 .right-panel {
   flex: 1; overflow: hidden; padding: 16px;
   background: var(--bg);
+}
+
+@media (max-width: 980px) {
+  .app-body {
+    flex-direction: column;
+  }
+  .left-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    max-height: 46vh;
+  }
+  .right-panel {
+    min-height: 54vh;
+    padding: 10px;
+  }
+  .header-inner {
+    padding: 0 12px;
+  }
+  .tagline {
+    display: none;
+  }
 }
 </style>

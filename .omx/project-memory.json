@@ -1,0 +1,37 @@
+{
+  "notes": [
+    {
+      "category": "architecture",
+      "content": "Step1/2/3 baseline aligned with teacher interviews: product has three modes (A代劳/B共创/C全自动), with V1 prioritizing A then B. In real scenarios most teachers start from existing similar PPT (A), second common is creating new course without direct template (B).",
+      "timestamp": "2026-04-21T16:21:33.866Z"
+    },
+    {
+      "category": "architecture",
+      "content": "Generation preflight must confirm 3 required fields before /generate or /generate/start: teaching_goal, audience, difficulty_focus. Backend returns 422 on missing; frontend GenerateBtn blocks generation until filled.",
+      "timestamp": "2026-04-21T16:21:33.898Z"
+    },
+    {
+      "category": "architecture",
+      "content": "Block-oriented extensibility is a core direction: slide_blocks.v1 already supports Text/Bullet/Code/Formula/Case/Table/Image/Flowchart. Next step is frontend and export fully switching from page.type rendering to block registry for plug-and-play block types.",
+      "timestamp": "2026-04-21T16:21:33.915Z"
+    },
+    {
+      "category": "notes",
+      "content": "Teacher acceptance criteria for 'usable' PPT: content correctness, coherent structure, matches teacher's own course style, and traceable to provided materials without hallucinated claims. Common post-draft edits: page-level rewrite/add case/remove overly complex content.",
+      "timestamp": "2026-04-21T16:21:33.928Z"
+    },
+    {
+      "category": "architecture",
+      "content": "Ralph iteration completed for block rendering refactor: SlideRenderer now prefers page.blocks (block-first) with legacy page.type fallback; PreviewPanel export now uses block-based export path when blocks exist, then falls back to legacy export.",
+      "timestamp": "2026-04-21T16:45:11.986Z"
+    }
+  ],
+  "directives": [
+    {
+      "directive": "Do not treat Step4 development as 'already 65% done'. Treat project as architecture-in-progress; keep validating each claim with runnable evidence (build/tests/API checks) and documented sources.",
+      "priority": "high",
+      "context": "Execution planning and status reporting",
+      "timestamp": "2026-04-21T16:21:33.943Z"
+    }
+  ]
+}

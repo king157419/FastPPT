@@ -1,14 +1,156 @@
 <template>
-  <div class="slide" :style="slideStyle">
-    <!-- COVER -->
-    <template v-if="page.type === 'cover'">
-      <div class="cover-bar" :style="{ background: theme.accent }"></div>
+  <div :class="mini ? 'slide-mini-wrap' : 'slide-full-wrap'">
+<div class="slide" :style="slideStyle" ref="slideEl">
+    <!-- BLOCK-FIRST COVER -->
+    <template v-if="hasBlocks && isCoverBlockPage">
+      <div class="cover-accent-block" :style="{ background: theme.accent }"></div>
+      <div class="cover-circle1" :style="{ background: theme.accent }"></div>
+      <div class="cover-circle2" :style="{ background: theme.accent }"></div>
       <div class="cover-body">
-        <div class="cover-eyebrow" :style="{ color: theme.accent }">课件</div>
-        <div class="cover-title" :style="{ color: theme.text }">{{ page.title }}</div>
-        <div class="cover-sub" :style="{ color: theme.accent, opacity: 0.8 }">{{ page.subtitle }}</div>
+        <div class="cover-tag" :style="{ background: theme.accent, color: theme.primary }">课件</div>
+        <div class="cover-title" :style="{ color: theme.text }">{{ blockTitle }}</div>
+        <div class="cover-divider" :style="{ background: theme.accent }"></div>
+        <div class="cover-sub" :style="{ color: theme.text, opacity: 0.75 }">{{ blockSubtitle }}</div>
       </div>
-      <div class="cover-deco" :style="{ background: theme.accent }"></div>
+    </template>
+
+    <!-- BLOCK-FIRST -->
+    <template v-else-if="hasBlocks">
+      <div class="s-header" v-if="blockTitle">
+        <div class="s-title" :style="{ color: theme.accent }">{{ blockTitle }}</div>
+        <div class="s-line" :style="{ background: theme.accent }"></div>
+      </div>
+
+      <div class="block-content" :class="{ 'with-header': !!blockTitle }">
+        <div
+          v-for="(block, i) in bodyBlocks"
+          :key="block.id || `${block.type}-${i}`"
+          class="block-node"
+        >
+          <template v-if="block.type === 'TextBlock'">
+            <div
+              v-if="block.payload?.role === 'teaching_tip'"
+              class="tip-bar"
+              :style="{ borderColor: theme.accent, background: theme.accent + '18' }"
+            >
+              <span class="tip-icon">💡</span>
+              <span class="tip-text" :style="{ color: theme.text }">{{ blockText(block) }}</span>
+            </div>
+            <div
+              v-else
+              class="block-text"
+              :class="{ quote: block.payload?.role === 'quote' }"
+              :style="{ color: theme.text }"
+            >
+              {{ blockText(block) }}
+            </div>
+          </template>
+
+          <template v-else-if="block.type === 'BulletBlock'">
+            <div class="bullets">
+              <div
+                v-for="(item, idx) in block.payload?.items || []"
+                :key="idx"
+                class="bullet-item"
+                :style="{ borderLeftColor: theme.accent }"
+              >
+                <span class="b-num" :style="{ background: theme.accent, color: theme.primary }">{{ idx + 1 }}</span>
+                <span class="b-text" :style="{ color: theme.text }">{{ item }}</span>
+              </div>
+            </div>
+          </template>
+
+          <template v-else-if="block.type === 'CodeBlock'">
+            <div class="code-wrap">
+              <div class="code-lang" :style="{ color: theme.accent }">{{ block.payload?.language }}</div>
+              <pre class="code-block"><code v-html="highlightCode(block.payload?.code, block.payload?.language)"></code></pre>
+              <div v-if="block.payload?.explanation" class="code-explain" :style="{ color: theme.text, opacity: 0.75 }">
+                {{ block.payload.explanation }}
+              </div>
+            </div>
+          </template>
+
+          <template v-else-if="block.type === 'FormulaBlock'">
+            <div class="formula-list">
+              <div
+                v-for="(f, idx) in block.payload?.formulas || []"
+                :key="idx"
+                class="formula-row"
+                :style="{ borderLeftColor: theme.accent }"
+              >
+                <span class="formula-label" :style="{ color: theme.accent }">{{ f.label }}</span>
+                <span class="formula-expr" :style="{ color: theme.text }" v-html="renderKatex(f.expr)"></span>
+              </div>
+              <div v-if="block.payload?.explanation" class="formula-explain" :style="{ color: theme.text, opacity: 0.7 }">
+                {{ block.payload.explanation }}
+              </div>
+            </div>
+          </template>
+
+          <template v-else-if="block.type === 'CaseBlock'">
+            <div class="example-body">
+              <div class="ex-problem" :style="{ color: theme.text, borderColor: theme.accent }">{{ block.payload?.problem }}</div>
+              <div class="ex-steps">
+                <div v-for="(s, idx) in block.payload?.steps || []" :key="idx" class="ex-step">
+                  <span class="step-num" :style="{ background: theme.accent, color: theme.primary }">{{ idx + 1 }}</span>
+                  <span :style="{ color: theme.text }">{{ s }}</span>
+                </div>
+              </div>
+              <div v-if="block.payload?.answer" class="ex-answer" :style="{ color: theme.accent }">
+                <span class="answer-check">✓</span> {{ block.payload.answer }}
+              </div>
+            </div>
+          </template>
+
+          <template v-else-if="block.type === 'TableBlock'">
+            <div class="two-cols">
+              <div class="col">
+                <div class="col-heading" :style="{ color: theme.accent }">{{ block.payload?.left?.heading }}</div>
+                <div v-for="(p, idx) in block.payload?.left?.points || []" :key="idx" class="col-point" :style="{ color: theme.text }">
+                  <span class="col-dot" :style="{ background: theme.accent }"></span>{{ p }}
+                </div>
+              </div>
+              <div class="col-divider" :style="{ background: theme.accent }"></div>
+              <div class="col">
+                <div class="col-heading" :style="{ color: theme.accent }">{{ block.payload?.right?.heading }}</div>
+                <div v-for="(p, idx) in block.payload?.right?.points || []" :key="idx" class="col-point" :style="{ color: theme.text }">
+                  <span class="col-dot" :style="{ background: theme.accent }"></span>{{ p }}
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <template v-else-if="block.type === 'ImageBlock'">
+            <div class="img-outer">
+              <img v-if="block.payload?.image_base64" class="slide-img" :src="'data:image/jpeg;base64,' + block.payload.image_base64" />
+              <img v-else-if="block.payload?.image_url" class="slide-img" :src="block.payload.image_url" />
+              <div v-if="block.payload?.caption" class="img-caption" :style="{ color: theme.text, borderColor: theme.accent }">
+                {{ block.payload.caption }}
+              </div>
+            </div>
+          </template>
+
+          <template v-else-if="block.type === 'FlowchartBlock'">
+            <div class="anim-wrap">
+              <iframe v-if="flowchartSrc(block)" :src="flowchartSrc(block)" class="anim-frame" frameborder="0" allowtransparency="true" scrolling="no"></iframe>
+              <div v-else class="anim-placeholder" :style="{ color: theme.accent }">互动流程图</div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <!-- COVER -->
+    <template v-else-if="page.type === 'cover'">
+      <div class="cover-accent-block" :style="{ background: theme.accent }"></div>
+      <div class="cover-circle1" :style="{ background: theme.accent }"></div>
+      <div class="cover-circle2" :style="{ background: theme.accent }"></div>
+      <div class="cover-body">
+        <div class="cover-tag" :style="{ background: theme.accent, color: theme.primary }">课件</div>
+        <div class="cover-title" :style="{ color: theme.text }">{{ page.title }}</div>
+        <div class="cover-divider" :style="{ background: theme.accent }"></div>
+        <div class="cover-sub" :style="{ color: theme.text, opacity: 0.75 }">{{ page.subtitle }}</div>
+      </div>
     </template>
 
     <!-- AGENDA -->
@@ -19,9 +161,10 @@
         <div class="s-line" :style="{ background: theme.accent }"></div>
       </div>
       <div class="agenda-list">
-        <div v-for="(item, i) in page.items" :key="i" class="agenda-item">
-          <span class="a-num" :style="{ color: theme.accent }">{{ String(i+1).padStart(2,'0') }}</span>
+        <div v-for="(item, i) in (page.items || page.points || [])" :key="i" class="agenda-item" :style="{ borderColor: theme.accent + '40' }">
+          <span class="a-num" :style="{ background: theme.accent, color: theme.primary }">{{ String(i+1).padStart(2,'0') }}</span>
           <span class="a-text" :style="{ color: theme.text }">{{ item }}</span>
+          <span class="a-arrow" :style="{ color: theme.accent }">→</span>
         </div>
       </div>
     </template>
@@ -33,14 +176,14 @@
         <div class="s-line" :style="{ background: theme.accent }"></div>
       </div>
       <div class="bullets">
-        <div v-for="(b, i) in page.bullets" :key="i" class="bullet-item">
-          <span class="b-dot" :style="{ background: theme.accent }"></span>
+        <div v-for="(b, i) in page.bullets" :key="i" class="bullet-item" :style="{ borderLeftColor: theme.accent }">
+          <span class="b-num" :style="{ background: theme.accent, color: theme.primary }">{{ i + 1 }}</span>
           <span class="b-text" :style="{ color: theme.text }">{{ b }}</span>
         </div>
       </div>
-      <div v-if="page.tip" class="tip-bar">
+      <div v-if="page.tip" class="tip-bar" :style="{ borderColor: theme.accent, background: theme.accent + '18' }">
         <span class="tip-icon">💡</span>
-        <span class="tip-text" :style="{ color: theme.accent }">{{ page.tip }}</span>
+        <span class="tip-text" :style="{ color: theme.text }">{{ page.tip }}</span>
       </div>
     </template>
 
@@ -164,10 +307,11 @@
       </div>
     </template>
   </div>
+  </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 import hljs from 'highlight.js/lib/core'
@@ -212,12 +356,69 @@ const props = defineProps({
   mini: { type: Boolean, default: false }
 })
 
+const slideEl = ref(null)
+const dynFontSize = ref(16)
+
+let ro = null
+function updateFontSize() {
+  if (!slideEl.value) return
+  const w = slideEl.value.offsetWidth
+  // 基准：以 960px 宽对应 16px 基础字号，等比缩放
+  dynFontSize.value = Math.max(6, (w / 960) * 16)
+}
+onMounted(() => {
+  if (props.mini) return
+  ro = new ResizeObserver(updateFontSize)
+  ro.observe(slideEl.value)
+  updateFontSize()
+})
+onUnmounted(() => { if (ro) ro.disconnect() })
+
 const TEMPLATE_MAP = {
   bar_chart: '/templates/bar_chart.html',
   card_flip: '/templates/card_flip.html',
   flowchart: '/templates/flowchart.html',
   quiz: '/templates/quiz.html',
   timeline: '/templates/timeline.html',
+}
+
+const blockList = computed(() => (Array.isArray(props.page?.blocks) ? props.page.blocks : []))
+const hasBlocks = computed(() => blockList.value.length > 0)
+const blockTitle = computed(() => {
+  const title = blockList.value.find((b) => b?.type === 'TextBlock' && b?.payload?.role === 'title')
+  return title?.payload?.text || props.page?.title || ''
+})
+const blockSubtitle = computed(() => {
+  const subtitle = blockList.value.find((b) => b?.type === 'TextBlock' && b?.payload?.role === 'subtitle')
+  return subtitle?.payload?.text || props.page?.subtitle || ''
+})
+const isCoverBlockPage = computed(() => {
+  if (props.page?.type === 'cover') return true
+  return blockList.value.some((b) => b?.layoutHints?.slot === 'hero')
+})
+const bodyBlocks = computed(() =>
+  blockList.value.filter((b) => {
+    if (b?.type !== 'TextBlock') return true
+    const role = b?.payload?.role
+    return role !== 'title' && role !== 'subtitle'
+  })
+)
+
+function blockText(block) {
+  return block?.payload?.text || ''
+}
+
+function flowchartSrc(block) {
+  if (block?.type !== 'FlowchartBlock') return null
+  const tpl = block?.payload?.template
+  const base = TEMPLATE_MAP[tpl]
+  if (!base) return null
+  const tdata = block?.payload?.template_data
+  if (tdata) {
+    const hash = encodeURIComponent(JSON.stringify(tdata))
+    return `${base}#${hash}`
+  }
+  return base
 }
 
 const animSrc = computed(() => {
@@ -237,27 +438,76 @@ const slideStyle = computed(() => ({
   width: '100%', height: '100%',
   position: 'relative', overflow: 'hidden',
   fontFamily: '"Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif',
-  fontSize: props.mini ? '28%' : '100%',
+  // mini: slide 以 960px 渲染，font-size 正常 16px，然后 CSS scale 缩小
+  fontSize: props.mini ? '16px' : `${dynFontSize.value}px`,
 }))
 </script>
 
 <style scoped>
+/* WRAPPER */
+.slide-full-wrap { width: 100%; height: 100%; }
+.slide-mini-wrap {
+  width: 100%; height: 100%; overflow: hidden;
+  position: relative;
+}
+/* mini 模式：内部 slide 以 960x540 渲染再缩放到容器 */
+.slide-mini-wrap .slide {
+  width: 960px !important; height: 540px !important;
+  transform-origin: top left;
+  transform: scale(calc(110 / 960));
+  position: absolute; top: 0; left: 0;
+}
 .slide { box-sizing: border-box; }
 
+/* BLOCK-FIRST */
+.block-content {
+  position: absolute;
+  inset: 0.8em 1em 0.8em 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  overflow: hidden;
+}
+.block-content.with-header {
+  top: 3.2em;
+}
+.block-node {
+  min-height: 0;
+}
+.block-text {
+  font-size: 1.1em;
+  line-height: 1.5;
+}
+.block-text.quote {
+  font-size: 1.55em;
+  line-height: 1.5;
+  text-align: center;
+  font-style: italic;
+  opacity: 0.95;
+}
+
 /* COVER */
-.cover-bar { position: absolute; top: 0; left: 0; right: 0; height: 0.45em; }
+.cover-accent-block { position: absolute; top: 0; left: 0; width: 0.5em; height: 100%; opacity: 0.9; }
+.cover-circle1 {
+  position: absolute; bottom: -4em; right: -4em;
+  width: 14em; height: 14em; border-radius: 50%; opacity: 0.08;
+}
+.cover-circle2 {
+  position: absolute; top: -3em; right: 3em;
+  width: 8em; height: 8em; border-radius: 50%; opacity: 0.05;
+}
 .cover-body {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 0.6em; padding: 2em 3em; text-align: center;
+  gap: 0.55em; padding: 2em 4em; text-align: center;
 }
-.cover-eyebrow { font-size: 0.85em; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.7; }
-.cover-title { font-size: 3em; font-weight: 700; line-height: 1.2; }
-.cover-sub { font-size: 1.2em; }
-.cover-deco {
-  position: absolute; bottom: -3em; right: -3em;
-  width: 10em; height: 10em; border-radius: 50%; opacity: 0.07;
+.cover-tag {
+  font-size: 0.7em; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.25em 0.9em; border-radius: 2em; margin-bottom: 0.3em;
 }
+.cover-title { font-size: 2.8em; font-weight: 800; line-height: 1.15; }
+.cover-divider { width: 3em; height: 0.2em; border-radius: 1px; margin: 0.2em 0; }
+.cover-sub { font-size: 1.15em; font-weight: 400; }
 
 /* SHARED HEADER */
 .s-header { position: absolute; top: 0.6em; left: 1em; right: 1em; }
@@ -266,23 +516,40 @@ const slideStyle = computed(() => ({
 .s-line { height: 0.18em; border-radius: 1px; width: 3em; }
 
 /* AGENDA */
-.agenda-list { position: absolute; top: 3.2em; left: 1.4em; right: 1em; display: flex; flex-direction: column; gap: 0.55em; }
-.agenda-item { display: flex; align-items: center; gap: 0.75em; }
-.a-num { font-size: 1.1em; font-weight: 700; font-family: monospace; min-width: 1.8em; opacity: 0.9; }
-.a-text { font-size: 1.3em; line-height: 1.4; }
+.agenda-list { position: absolute; top: 3.2em; left: 1em; right: 1em; display: flex; flex-direction: column; gap: 0.5em; }
+.agenda-item {
+  display: flex; align-items: center; gap: 0.8em;
+  padding: 0.55em 0.9em; border-radius: 0.4em;
+  border: 1px solid; background: rgba(255,255,255,0.04);
+}
+.a-num {
+  font-size: 0.85em; font-weight: 700; font-family: monospace;
+  min-width: 1.8em; height: 1.8em; border-radius: 0.25em;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.a-text { font-size: 1.2em; line-height: 1.4; flex: 1; }
+.a-arrow { font-size: 1em; opacity: 0.6; flex-shrink: 0; }
 
 /* CONTENT */
-.bullets { position: absolute; top: 3.4em; left: 1.2em; right: 1em; display: flex; flex-direction: column; gap: 0.65em; }
-.bullet-item { display: flex; align-items: flex-start; gap: 0.6em; }
-.b-dot { flex-shrink: 0; width: 0.42em; height: 0.42em; border-radius: 50%; margin-top: 0.5em; }
+.bullets { position: absolute; top: 3.4em; left: 1em; right: 1em; display: flex; flex-direction: column; gap: 0.55em; }
+.bullet-item {
+  display: flex; align-items: flex-start; gap: 0.7em;
+  padding: 0.5em 0.7em; border-radius: 0.4em;
+  background: rgba(255,255,255,0.05); border-left: 0.22em solid;
+}
+.b-num {
+  flex-shrink: 0; width: 1.5em; height: 1.5em; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8em; font-weight: 700; margin-top: 0.1em;
+}
 .b-check { font-size: 1.1em; font-weight: 700; flex-shrink: 0; min-width: 1.2em; }
-.b-text { font-size: 1.3em; line-height: 1.45; }
+.b-text { font-size: 1.2em; line-height: 1.5; }
 .tip-bar {
-  position: absolute; bottom: 0.7em; left: 1em; right: 1em;
+  position: absolute; bottom: 0.6em; left: 1em; right: 1em;
   display: flex; align-items: center; gap: 0.4em;
-  font-size: 0.85em; opacity: 0.85;
-  padding: 0.4em 0.8em;
-  background: rgba(255,255,255,0.06); border-radius: 0.4em;
+  font-size: 0.82em;
+  padding: 0.4em 0.8em; border-radius: 0.4em;
+  border: 1px solid;
 }
 .tip-icon { font-size: 1em; }
 .tip-text { font-style: italic; }

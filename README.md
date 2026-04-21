@@ -2,6 +2,15 @@
 
 > 上传参考资料 → 多轮对话收集教学意图 → 一键生成 PPT + Word 教案
 
+## 📚 文档导航（新人先看）
+
+- `docs/README.md`：项目摘要层索引（10 分钟上手）
+- `docs/00-START-HERE.md`：代码入口、启动方式、当前系统事实
+- `docs/10-Step1-Problem-And-Needs.md`：痛点与需求结论
+- `docs/20-Step2-Product-Positioning.md`：产品定位与三档模式
+- `docs/30-Step3-Feature-Decomposition-And-Implementation.md`：功能拆解与可插拔信息块方案
+- `.omc/README-INDEX.md`：技术研究深度索引
+
 ## ✨ 功能特性
 
 - **文件解析**：支持 PDF / Word / PPT / TXT，自动提取文本并分块入库
@@ -65,6 +74,8 @@ FastPPT/
 │       ├── parser.py        # 文件文本提取
 │       ├── rag.py           # TF-IDF 检索
 │       ├── intent.py        # Mock 意图提取
+│       ├── teaching_spec.py # 教学意图标准化
+│       ├── slide_blocks.py  # 可插拔信息块归一化
 │       ├── ppt_gen.py       # PPT 生成
 │       └── doc_gen.py       # Word 生成
 └── frontend/

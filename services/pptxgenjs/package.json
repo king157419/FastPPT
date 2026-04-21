@@ -1,0 +1,23 @@
+{
+  "name": "fastppt-pptxgenjs-service",
+  "version": "1.0.0",
+  "description": "Node.js microservice for PPTX generation using PptxGenJS",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "keywords": ["pptx", "powerpoint", "generation", "teaching"],
+  "author": "FastPPT Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "pptxgenjs": "^3.12.0",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

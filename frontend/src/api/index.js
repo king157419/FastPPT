@@ -19,9 +19,71 @@ export async function uploadAudio(blob) {
   return res.data  // { text: '...' }
 }
 
-export async function sendChat(messages) {
-  const res = await api.post('/chat', { messages })
+export async function sendChat(messages, options = {}) {
+  const payload = {
+    messages,
+    stream: Boolean(options.stream),
+    use_agent: Boolean(options.useAgent),
+  }
+  if (options.sessionId) payload.session_id = options.sessionId
+
+  const res = await api.post('/chat', payload)
   return res.data
+}
+
+export async function sendChatStream(messages, options = {}) {
+  const payload = {
+    messages,
+    stream: true,
+    use_agent: Boolean(options.useAgent),
+  }
+  if (options.sessionId) payload.session_id = options.sessionId
+
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(text || `HTTP ${response.status}`)
+  }
+  if (!response.body) throw new Error('流式响应为空')
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder('utf-8')
+  let buffer = ''
+
+  const emit = async (event) => {
+    if (typeof options.onEvent === 'function') await options.onEvent(event)
+  }
+
+  while (true) {
+    const { value, done } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+
+    const events = buffer.split('\n\n')
+    buffer = events.pop() || ''
+
+    for (const block of events) {
+      const line = block
+        .split('\n')
+        .map((item) => item.trim())
+        .find((item) => item.startsWith('data:'))
+
+      if (!line) continue
+      const raw = line.slice(5).trim()
+      if (!raw) continue
+
+      try {
+        await emit(JSON.parse(raw))
+      } catch {
+        await emit({ chunk: raw })
+      }
+    }
+  }
 }
 
 // 启动异步生成，返回 job_id

@@ -1,0 +1,67 @@
+{
+  "projectName": "AI备课/PPT生成开源项目调研分析",
+  "version": "1.0.0",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "收集和整理GitHub搜索结果中的所有AI备课/PPT项目",
+      "description": "从Tavily搜索结果中提取所有相关项目的基本信息，包括项目名称、GitHub链接、简介",
+      "priority": 1,
+      "passes": true,
+      "acceptanceCriteria": [
+        "✅ 创建项目清单文档，包含至少15个相关开源项目 - 完成20个项目",
+        "✅ 每个项目记录：名称、GitHub URL、简短描述、主要功能 - 已记录",
+        "✅ 项目分类：纯PPT生成、教案生成、综合备课系统 - 已分类为4大类"
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "深度分析每个项目的技术栈和架构",
+      "description": "访问每个项目的GitHub仓库，分析技术实现、star数、最后更新时间、活跃度",
+      "priority": 2,
+      "passes": true,
+      "acceptanceCriteria": [
+        "✅ 每个项目记录：技术栈（前端/后端/AI模型）、GitHub stars数量、最后提交时间 - github-stats.json包含10个主要项目的详细数据",
+        "✅ 评估项目活跃度：active（3个月内有更新）、maintained（1年内有更新）、archived（超过1年无更新） - 已评估并分类",
+        "✅ 识别核心架构模式：单阶段生成 vs 两阶段生成、本地部署 vs API服务 - 已识别并记录"
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "对比分析项目功能和FastPPT的差异",
+      "description": "将每个项目的功能与FastPPT对比，找出优势和不足",
+      "priority": 3,
+      "passes": true,
+      "acceptanceCriteria": [
+        "✅ 创建功能对比矩阵：文件解析、RAG检索、多轮对话、PPT生成、教案生成、预览功能 - feature-comparison.md包含完整对比表",
+        "✅ 标注每个项目相比FastPPT的优势功能 - 已标注",
+        "✅ 识别FastPPT缺失但其他项目具备的关键功能 - 已识别（两阶段生成、反思机制、API接口等）"
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "评估项目的可用性和二次开发难度",
+      "description": "分析每个项目是否可以直接使用，或需要多少工作量进行二次开发",
+      "priority": 4,
+      "passes": true,
+      "acceptanceCriteria": [
+        "✅ 每个项目标注可用性等级：直接可用、需要配置、需要二次开发、仅供参考 - feature-comparison.md包含可用性评估",
+        "✅ 评估部署难度：Docker一键部署、需要配置环境、复杂部署 - 已评估",
+        "✅ 评估代码质量：文档完整度、代码结构清晰度、测试覆盖率 - 已评估"
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "生成最终推荐方案报告",
+      "description": "基于分析结果，给出针对FastPPT项目的具体推荐方案",
+      "priority": 5,
+      "passes": true,
+      "acceptanceCriteria": [
+        "✅ 推荐Top 3项目，说明推荐理由 - Presenton、OpenMAIC、PPTAgent",
+        "✅ 针对FastPPT改进方向，推荐可参考的具体项目和功能模块 - 已详细说明",
+        "✅ 给出实施路径：直接替换 vs 功能借鉴 vs 架构参考 - 提供4种方案对比",
+        "✅ 报告保存为 .omc/ai-courseware-analysis.md - 已保存"
+      ]
+    }
+  ]
+}

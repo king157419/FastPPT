@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "active": false,
+  "skill": "ralph",
+  "keyword": "",
+  "phase": "verifying",
+  "activated_at": "2026-04-21T16:40:19.370Z",
+  "updated_at": "2026-04-21T16:44:47.486Z",
+  "source": "state-server",
+  "active_skills": []
+}

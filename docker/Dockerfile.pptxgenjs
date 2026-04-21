@@ -1,0 +1,42 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
+# Create package.json for pptxgenjs service
+RUN echo '{ \
+  "name": "fastppt-pptxgenjs", \
+  "version": "1.0.0", \
+  "description": "PPTXGenJS service for FastPPT", \
+  "main": "server.js", \
+  "scripts": { \
+    "start": "node server.js" \
+  }, \
+  "dependencies": { \
+    "express": "^4.18.2", \
+    "pptxgenjs": "^3.12.0", \
+    "cors": "^2.8.5", \
+    "morgan": "^1.10.0" \
+  } \
+}' > package.json
+
+# Install dependencies
+RUN npm install --production
+
+# Create server.js
+COPY docker/pptxgenjs-server.js ./server.js
+
+# Create necessary directories
+RUN mkdir -p /app/temp /app/logs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Run the service
+CMD ["npm", "start"]

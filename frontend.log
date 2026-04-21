@@ -1,0 +1,13 @@
+
+> fastppt-frontend@1.0.0 dev
+> vite
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+Port 5173 is in use, trying another one...
+Port 5174 is in use, trying another one...
+Port 5175 is in use, trying another one...
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m625[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [2m00:41:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/SlideRenderer.vue, /src/components/SlideRenderer.vue?vue&type=style&index=0&scoped=1e0b3141&lang.css[22m
+[2m00:42:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/PreviewPanel.vue[22m

@@ -1,0 +1,111 @@
+{
+  "projectName": "高优先级开源项目深度学习",
+  "version": "1.0.0",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "深度学习PptxGenJS - PPTX生成底层库",
+      "description": "研究PptxGenJS的核心架构、API设计、可复用模块，针对FastPPT提出集成方案",
+      "priority": 1,
+      "passes": true,
+      "acceptanceCriteria": [
+        "✅ 分析PptxGenJS核心架构：Slide/Shape/Text/Chart对象模型 - 已完成",
+        "✅ 列出关键API：创建幻灯片、添加文本、插入图表、导出PPTX - 已完成",
+        "✅ 识别可复用模块：布局引擎、样式系统、导出器 - 已完成",
+        "✅ 提供FastPPT集成方案：如何替换当前python-pptx - 已完成",
+        "✅ 代码示例：创建标题页、内容页、图表页 - 已完成",
+        "✅ 避坑指南：中文字体、图片处理、性能优化 - 已完成"
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "深度学习Reveal.js - HTML5课件展示引擎",
+      "description": "研究Reveal.js的架构、插件系统、动画能力，评估是否适合FastPPT",
+      "priority": 2,
+      "passes": true,
+      "acceptanceCriteria": [
+        "✅ 分析Reveal.js核心架构：Deck/Slide/Fragment系统 - 已完成",
+        "✅ 列出关键特性：Markdown支持、插件系统、主题定制、导出PDF - 已完成",
+        "✅ 识别可复用模块：动画引擎、导航系统、演讲者模式 - 已完成",
+        "✅ 评估FastPPT适用性：HTML5课件 vs PPTX文件的权衡 - 已完成",
+        "✅ 代码示例：创建交互式课件、添加动画效果 - 已完成",
+        "✅ 集成建议：作为预览模式还是替代方案 - 已完成"
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "深度学习Marp - Markdown转Slides",
+      "description": "研究Marp的转换引擎、主题系统，评估快速出稿能力",
+      "priority": 3,
+      "passes": true,
+      "acceptanceCriteria": [
+        "✅ 分析Marp核心架构：Markdown解析器、渲染引擎、导出器 - 已完成",
+        "✅ 列出关键特性：Markdown语法扩展、主题系统、多格式导出 - 已完成",
+        "✅ 识别可复用模块：Markdown-to-Slide转换逻辑 - 已完成",
+        "✅ FastPPT集成方案：作为教师草稿到PPT的快速通道 - 已完成",
+        "✅ 代码示例：Markdown模板、自定义主题 - 已完成",
+        "✅ 性能评估：转换速度、输出质量 - 已完成"
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "深度学习Dify - LLM应用编排平台",
+      "description": "研究Dify的工作流引擎、知识库系统、Agent编排能力",
+      "priority": 4,
+      "passes": true,
+      "acceptanceCriteria": [
+        "✅ 分析Dify核心架构：Workflow/Agent/Knowledge Base三大模块 - 已完成",
+        "✅ 列出关键API：工作流创建、知识库管理、Agent调用 - 已完成",
+        "✅ 识别可复用模块：对话管理、RAG检索、工具调用 - 已完成",
+        "✅ FastPPT集成方案：复用对话/RAG能力，减少自研工作量 - 已完成",
+        "✅ 代码示例：创建教学对话工作流、集成知识库 - 已完成",
+        "✅ 部署建议：Docker部署、API集成方式 - 已完成"
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "深度学习RAGFlow - 生产级RAG系统",
+      "description": "研究RAGFlow的文档解析、检索引擎、问答链路",
+      "priority": 5,
+      "passes": true,
+      "acceptanceCriteria": [
+        "✅ 分析RAGFlow核心架构：文档解析、向量检索、问答生成 - 已完成",
+        "✅ 列出关键特性：多格式解析、混合检索、引用溯源 - 已完成",
+        "✅ 识别可复用模块：文档解析器、检索引擎、Reranker - 已完成",
+        "✅ FastPPT集成方案：替换TF-IDF为向量检索 - 已完成",
+        "✅ 代码示例：文档上传、知识检索、答案生成 - 已完成",
+        "✅ 性能优化：索引构建、检索速度、内存占用 - 已完成"
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "深度学习LangChain - Agent/RAG生态",
+      "description": "研究LangChain的Agent框架、RAG组件、工具调用能力",
+      "priority": 6,
+      "passes": true,
+      "acceptanceCriteria": [
+        "✅ 分析LangChain核心架构：Chain/Agent/Tool/Memory四大组件 - 已完成",
+        "✅ 列出关键API：Chain构建、Agent创建、Tool注册、Memory管理 - 已完成",
+        "✅ 识别可复用模块：RAG链、ReAct Agent、工具调用框架 - 已完成",
+        "✅ FastPPT集成方案：使用LangChain重构对话和生成逻辑 - 已完成",
+        "✅ 代码示例：创建教学Agent、构建RAG链、注册PPT生成工具 - 已完成",
+        "✅ 避坑指南：版本兼容、性能优化、错误处理 - 已完成"
+      ]
+    },
+    {
+      "id": "US-007",
+      "title": "生成综合集成方案和最佳实践",
+      "description": "基于6个项目的学习，提出FastPPT的整体集成方案",
+      "priority": 7,
+      "passes": true,
+      "acceptanceCriteria": [
+        "✅ 提出技术栈组合方案：PPT渲染层、RAG主干、Agent编排 - 3个方案已完成",
+        "✅ 设计模块架构：各项目在FastPPT中的定位和交互 - 已完成",
+        "✅ 提供实施路线图：按周排期，分阶段集成 - 8周路线图已完成",
+        "✅ 代码示例：核心模块集成代码 - 已完成",
+        "✅ 性能基准：各方案的速度、质量、成本对比 - 已完成",
+        "✅ 最终笔记保存为 .omc/high-priority-repos-analysis.md - 已完成"
+      ]
+    }
+  ]
+}

@@ -4,6 +4,12 @@ from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 import os
+import time
+import logging
+import requests
+from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 SLIDE_W = Inches(13.33)
@@ -145,11 +151,152 @@ def _summary_slide(prs, topic, key_points):
     return slide
 
 
-def generate_pptx(intent: dict, slide_contents: list[dict], output_path: str) -> str:
+def _convert_to_pptxgenjs_format(intent: dict, slide_contents: list[dict]) -> dict:
     """
-    根据 intent JSON 和 slide_contents 生成 .pptx 文件。
-    slide_contents: [{"key_point": str, "bullets": [str], "tip": str, "rag_ctx": str}]
-    返回输出文件路径。
+    将现有的 intent 和 slide_contents 转换为 PptxGenJS 服务所需的格式。
+    """
+    topic = intent.get("topic", "未知主题")
+    audience = intent.get("audience", "学生")
+    key_points = intent.get("key_points", ["核心概念", "基本原理", "实际应用"])
+    duration = intent.get("duration", "45分钟")
+
+    pages = []
+
+    # Cover slide
+    pages.append({
+        "type": "cover",
+        "title": topic,
+        "subtitle": f"适用对象：{audience}　|　课时：{duration}"
+    })
+
+    # Table of contents
+    pages.append({
+        "type": "agenda",
+        "title": "目  录",
+        "items": key_points
+    })
+
+    # Content slides
+    for i, sc in enumerate(slide_contents):
+        kp = sc.get("key_point", key_points[i] if i < len(key_points) else f"知识点{i+1}")
+        bullets = sc.get("bullets", [f"{kp}的核心内容"])
+        tip = sc.get("tip", "")
+
+        pages.append({
+            "type": "content",
+            "title": f"{i+1}. {kp}",
+            "bullets": bullets,
+            "tip": tip
+        })
+
+    # Summary slide
+    pages.append({
+        "type": "summary",
+        "title": "课程小结",
+        "takeaways": key_points
+    })
+
+    return {
+        "teaching_spec": {
+            "title": topic,
+            "subject": intent.get("subject", ""),
+            "teacher": intent.get("teacher", "TeachMind AI")
+        },
+        "pages": pages,
+        "theme": "education",
+        "metadata": {
+            "author": intent.get("teacher", "TeachMind AI"),
+            "title": topic,
+            "filename": os.path.basename(output_path) if 'output_path' in locals() else f"{topic}.pptx"
+        }
+    }
+
+
+def call_pptxgenjs_service(
+    intent: dict,
+    slide_contents: list[dict],
+    output_path: str,
+    service_url: Optional[str] = None,
+    timeout: int = 30,
+    max_retries: int = 2
+) -> Optional[str]:
+    """
+    调用 PptxGenJS 服务生成 PPT。
+
+    Args:
+        intent: 课程意图字典
+        slide_contents: 幻灯片内容列表
+        output_path: 输出文件路径
+        service_url: PptxGenJS 服务地址，默认从环境变量读取
+        timeout: 请求超时时间（秒）
+        max_retries: 最大重试次数
+
+    Returns:
+        成功返回输出文件路径，失败返回 None
+    """
+    if service_url is None:
+        service_url = os.environ.get("PPTXGENJS_SERVICE_URL", "http://localhost:3000")
+
+    endpoint = f"{service_url}/generate"
+
+    # 转换数据格式
+    payload = _convert_to_pptxgenjs_format(intent, slide_contents)
+    payload["metadata"]["filename"] = os.path.basename(output_path)
+
+    start_time = time.time()
+
+    for attempt in range(max_retries + 1):
+        try:
+            logger.info(f"[PptxGenJS] 调用服务生成 PPT (尝试 {attempt + 1}/{max_retries + 1})")
+
+            response = requests.post(
+                endpoint,
+                json=payload,
+                timeout=timeout,
+                headers={"Content-Type": "application/json"}
+            )
+
+            if response.status_code == 200:
+                # 保存返回的 PPTX 文件
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                with open(output_path, "wb") as f:
+                    f.write(response.content)
+
+                duration = time.time() - start_time
+                slide_count = len(payload["pages"])
+                avg_time = duration / slide_count if slide_count > 0 else 0
+
+                logger.info(
+                    f"[PptxGenJS] 生成成功: {slide_count} 页, "
+                    f"耗时 {duration:.2f}s ({avg_time:.2f}s/页)"
+                )
+
+                return output_path
+            else:
+                logger.warning(
+                    f"[PptxGenJS] 服务返回错误: {response.status_code} - {response.text[:200]}"
+                )
+
+        except requests.exceptions.Timeout:
+            logger.warning(f"[PptxGenJS] 请求超时 (尝试 {attempt + 1}/{max_retries + 1})")
+        except requests.exceptions.ConnectionError:
+            logger.warning(f"[PptxGenJS] 连接失败 (尝试 {attempt + 1}/{max_retries + 1})")
+        except Exception as e:
+            logger.error(f"[PptxGenJS] 调用失败: {e}")
+            break
+
+        # 重试前等待
+        if attempt < max_retries:
+            time.sleep(1)
+
+    duration = time.time() - start_time
+    logger.warning(f"[PptxGenJS] 所有尝试失败，耗时 {duration:.2f}s")
+    return None
+
+
+def _generate_pptx_pythonpptx(intent: dict, slide_contents: list[dict], output_path: str) -> str:
+    """
+    使用 python-pptx 生成 PPT（fallback 方法）。
     """
     topic = intent.get("topic", "未知主题")
     audience = intent.get("audience", "学生")
@@ -174,3 +321,42 @@ def generate_pptx(intent: dict, slide_contents: list[dict], output_path: str) ->
 
     prs.save(output_path)
     return output_path
+
+
+def generate_pptx(intent: dict, slide_contents: list[dict], output_path: str) -> str:
+    """
+    根据 intent JSON 和 slide_contents 生成 .pptx 文件。
+    优先使用 PptxGenJS 服务，失败时 fallback 到 python-pptx。
+
+    Args:
+        intent: 课程意图字典
+        slide_contents: [{"key_point": str, "bullets": [str], "tip": str, "rag_ctx": str}]
+        output_path: 输出文件路径
+
+    Returns:
+        输出文件路径
+    """
+    start_time = time.time()
+
+    # 尝试使用 PptxGenJS 服务
+    result = call_pptxgenjs_service(intent, slide_contents, output_path)
+
+    if result:
+        duration = time.time() - start_time
+        logger.info(f"[PPT生成] 使用 PptxGenJS 服务成功，总耗时 {duration:.2f}s")
+        return result
+
+    # Fallback 到 python-pptx
+    logger.info("[PPT生成] PptxGenJS 服务不可用，使用 python-pptx fallback")
+    fallback_start = time.time()
+
+    result = _generate_pptx_pythonpptx(intent, slide_contents, output_path)
+
+    fallback_duration = time.time() - fallback_start
+    total_duration = time.time() - start_time
+    logger.info(
+        f"[PPT生成] python-pptx fallback 完成，"
+        f"生成耗时 {fallback_duration:.2f}s，总耗时 {total_duration:.2f}s"
+    )
+
+    return result
