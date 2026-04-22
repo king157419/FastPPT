@@ -34,6 +34,8 @@ Thumbs.db
 # Env
 .env
 .env.local
+backend/.env
+docker/.env
 
 # Runtime artifacts
 *.log

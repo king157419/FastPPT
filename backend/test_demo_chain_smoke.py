@@ -18,6 +18,7 @@ def _write_dummy_file(path: str, content: bytes) -> str:
 
 
 def test_demo_chain_smoke(monkeypatch, tmp_path):
+    monkeypatch.setenv("CONTEST_FORCE_PLAIN", "true")
     monkeypatch.setenv("ENABLE_AGENT", "false")
     monkeypatch.delenv("REDIS_URL", raising=False)
     monkeypatch.delenv("RAGFLOW_BASE_URL", raising=False)

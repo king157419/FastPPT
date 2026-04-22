@@ -11,7 +11,7 @@ if errorlevel 1 (
 )
 
 echo [2/3] Starting backend (uvicorn)...
-start "FastPPT Backend" cmd /k "uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+start "FastPPT Backend" cmd /k "set CONTEST_FORCE_PLAIN=true && set ENABLE_AGENT=false && set REDIS_URL= && set RAGFLOW_BASE_URL= && set RAGFLOW_API_KEY= && set RAGFLOW_KB_ID= && uvicorn main:app --reload --host 0.0.0.0 --port 8000"
 
 echo [3/3] Starting frontend (vite)...
 cd ../frontend

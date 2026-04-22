@@ -11,12 +11,21 @@ def _has_agent_routes(module) -> bool:
 
 
 def test_agent_router_not_registered_when_disabled(monkeypatch):
+    monkeypatch.setenv("CONTEST_FORCE_PLAIN", "false")
     monkeypatch.setenv("ENABLE_AGENT", "false")
     module = importlib.reload(backend_main)
     assert _has_agent_routes(module) is False
 
 
 def test_agent_router_registered_when_enabled(monkeypatch):
+    monkeypatch.setenv("CONTEST_FORCE_PLAIN", "false")
     monkeypatch.setenv("ENABLE_AGENT", "true")
     module = importlib.reload(backend_main)
     assert _has_agent_routes(module) is True
+
+
+def test_agent_router_not_registered_when_contest_plain_forced(monkeypatch):
+    monkeypatch.setenv("CONTEST_FORCE_PLAIN", "true")
+    monkeypatch.setenv("ENABLE_AGENT", "true")
+    module = importlib.reload(backend_main)
+    assert _has_agent_routes(module) is False

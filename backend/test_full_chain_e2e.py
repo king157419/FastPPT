@@ -20,6 +20,7 @@ def _write_dummy_file(path: str, content: bytes) -> str:
 
 def test_full_chain_upload_chat_generate_revise(monkeypatch, tmp_path):
     source_index.reset_all()
+    monkeypatch.setenv("CONTEST_FORCE_PLAIN", "true")
     monkeypatch.setenv("ENABLE_AGENT", "false")
     monkeypatch.delenv("REDIS_URL", raising=False)
     monkeypatch.setattr(generate_api, "OUTPUT_DIR", str(tmp_path))

@@ -90,7 +90,7 @@ export async function sendChat(messages, options = {}) {
   const payload = {
     messages,
     stream: Boolean(options.stream),
-    use_agent: Boolean(options.useAgent),
+    use_agent: false,
   }
   if (options.sessionId) payload.session_id = options.sessionId
 
@@ -102,7 +102,7 @@ export async function sendChatStream(messages, options = {}) {
   const payload = {
     messages,
     stream: true,
-    use_agent: Boolean(options.useAgent),
+    use_agent: false,
   }
   if (options.sessionId) payload.session_id = options.sessionId
 
@@ -121,9 +121,31 @@ export async function sendChatStream(messages, options = {}) {
   const reader = response.body.getReader()
   const decoder = new TextDecoder('utf-8')
   let buffer = ''
+  let emittedCount = 0
 
   const emit = async (event) => {
+    emittedCount += 1
     if (typeof options.onEvent === 'function') await options.onEvent(event)
+  }
+
+  const processBlock = async (block) => {
+    const normalized = String(block || '').replace(/\r\n/g, '\n').trim()
+    if (!normalized) return
+
+    const line = normalized
+      .split('\n')
+      .map((item) => item.trim())
+      .find((item) => item.startsWith('data:'))
+
+    if (!line) return
+    const raw = line.slice(5).trim()
+    if (!raw) return
+
+    try {
+      await emit(JSON.parse(raw))
+    } catch {
+      await emit({ chunk: raw })
+    }
   }
 
   while (true) {
@@ -134,23 +156,13 @@ export async function sendChatStream(messages, options = {}) {
     const events = buffer.split('\n\n')
     buffer = events.pop() || ''
 
-    for (const block of events) {
-      const line = block
-        .split('\n')
-        .map((item) => item.trim())
-        .find((item) => item.startsWith('data:'))
-
-      if (!line) continue
-      const raw = line.slice(5).trim()
-      if (!raw) continue
-
-      try {
-        await emit(JSON.parse(raw))
-      } catch {
-        await emit({ chunk: raw })
-      }
-    }
+    for (const block of events) await processBlock(block)
   }
+
+  // Handle trailing buffered data when stream ends without a final \n\n separator.
+  if (buffer.trim()) await processBlock(buffer)
+
+  return { emittedCount }
 }
 
 // 启动异步生成，返回 job_id
@@ -171,8 +183,6 @@ export async function modifyCourse(payload) {
     '/generate/modify',
     '/modify',
     '/ppt/modify',
-    '/agent/modify',
-    '/agent/generate/modify',
   ]
 
   let lastError = null

@@ -23,6 +23,10 @@ def _agent_enabled() -> bool:
     return os.getenv("ENABLE_AGENT", "false").strip().lower() == "true"
 
 
+def _contest_force_plain() -> bool:
+    return os.getenv("CONTEST_FORCE_PLAIN", "true").strip().lower() == "true"
+
+
 class Message(BaseModel):
     role: str
     content: str
@@ -131,9 +135,15 @@ async def chat(req: ChatRequest):
     session_id = req.session_id or str(uuid.uuid4())
     messages = _normalize_messages(req.messages)
 
-    wants_agent = req.use_agent and _agent_enabled()
-    if req.use_agent and not _agent_enabled():
-        logger.info("Agent disabled by config; fallback to plain chat")
+    agent_enabled = _agent_enabled()
+    contest_force_plain = _contest_force_plain()
+    wants_agent = req.use_agent and agent_enabled and not contest_force_plain
+
+    if req.use_agent and not wants_agent:
+        if contest_force_plain:
+            logger.info("Contest plain mode enabled; forcing plain chat path")
+        elif not agent_enabled:
+            logger.info("Agent disabled by config; fallback to plain chat")
 
     if wants_agent and req.stream:
         return _stream_agent_response(messages, session_id)
@@ -177,7 +187,7 @@ def _stream_response(
                 payload = {"chunk": chunk}
                 if stream_meta:
                     payload.update(stream_meta)
-                yield f"data: {json.dumps(payload, ensure_ascii=False)}\\n\\n"
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
         except Exception as fallback_exc:
             if initial_agent_error is not None:
                 error_message = (
@@ -190,11 +200,11 @@ def _stream_response(
             err_payload = {"error": error_message}
             if stream_meta:
                 err_payload.update(stream_meta)
-            yield f"data: {json.dumps(err_payload, ensure_ascii=False)}\\n\\n"
+            yield f"data: {json.dumps(err_payload, ensure_ascii=False)}\n\n"
             return
 
         done = _build_final_payload(full_text, session_id, stream_meta)
-        yield f"data: {json.dumps(done, ensure_ascii=False)}\\n\\n"
+        yield f"data: {json.dumps(done, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(
         event_gen(),
@@ -243,10 +253,10 @@ def _stream_agent_response(messages: list[dict[str, str]], session_id: str) -> S
             async for chunk in agent.chat_stream(message=user_message, session_id=session_id):
                 full_text += chunk
                 payload = {"chunk": chunk, "agent_mode": True}
-                yield f"data: {json.dumps(payload, ensure_ascii=False)}\\n\\n"
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
             done = _build_final_payload(full_text, session_id, {"agent_mode": True})
-            yield f"data: {json.dumps(done, ensure_ascii=False)}\\n\\n"
+            yield f"data: {json.dumps(done, ensure_ascii=False)}\n\n"
         except Exception as agent_exc:
             logger.exception("Agent streaming failed, trying fallback")
 

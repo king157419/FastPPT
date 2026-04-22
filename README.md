@@ -12,9 +12,11 @@ Use demo profile before running:
 
 ```bash
 cp backend/.env.demo backend/.env
+cp docker/.env.demo docker/.env
 ```
 
 Demo profile guarantees:
+- `CONTEST_FORCE_PLAIN=true` (hard-disable agent path for contest demo)
 - `ENABLE_AGENT=false` (agent path disabled by default)
 - `REDIS_URL=` (Redis optional, not required for demo)
 - `RAGFLOW_*` empty by default
@@ -28,6 +30,7 @@ curl http://localhost:8000/health
 Expected key fields in demo mode:
 - `chat_mode: plain`
 - `agent_enabled: false`
+- `contest_force_plain: true`
 - `redis: skipped`
 - `demo_mode: true`
 
@@ -57,6 +60,12 @@ docker compose -f docker/docker-compose.yml up --build
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:8000`
 - API docs: `http://localhost:8000/docs`
+
+Redis is optional in contest mode. If you explicitly need agent runtime, start with:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile agent up --build
+```
 
 ### Option B: Local development
 

@@ -10,6 +10,7 @@ from api import chat as chat_api
 
 
 def test_use_agent_request_falls_back_when_agent_disabled(monkeypatch):
+    monkeypatch.setenv("CONTEST_FORCE_PLAIN", "true")
     monkeypatch.setenv("ENABLE_AGENT", "false")
 
     calls = {"plain": 0, "agent": 0}
@@ -44,6 +45,7 @@ def test_use_agent_request_falls_back_when_agent_disabled(monkeypatch):
 
 
 def test_agent_and_fallback_error_are_both_exposed(monkeypatch):
+    monkeypatch.setenv("CONTEST_FORCE_PLAIN", "false")
     monkeypatch.setenv("ENABLE_AGENT", "true")
 
     async def fail_agent(messages, session_id):

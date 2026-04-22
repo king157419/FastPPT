@@ -8,14 +8,6 @@
         <span>备课对话</span>
       </div>
       <div class="panel-actions">
-        <label class="agent-toggle" :class="{ disabled: messages.length > 1 || loading }">
-          <input
-            type="checkbox"
-            v-model="useAgent"
-            :disabled="messages.length > 1 || loading"
-          />
-          Agent
-        </label>
         <span v-if="intentReady" class="done-badge">✓ 完成</span>
       </div>
     </div>
@@ -97,7 +89,6 @@ const intentReady = ref(false)
 const msgBox = ref(null)
 const chatInputEl = ref(null)
 const recording = ref(false)
-const useAgent = ref(false)
 const sessionId = ref('')
 let mediaRecorder = null
 let audioChunks = []
@@ -134,7 +125,7 @@ onMounted(async () => {
 async function bootstrap() {
   loading.value = true
   try {
-    const data = await sendChat([], { useAgent: useAgent.value, sessionId: sessionId.value })
+    const data = await sendChat([], { sessionId: sessionId.value })
     if (data.session_id) sessionId.value = data.session_id
     messages.value.push({
       role: 'assistant',
@@ -338,8 +329,7 @@ async function send() {
   }
 
   try {
-    await sendChatStream(history, {
-      useAgent: useAgent.value,
+    const streamResult = await sendChatStream(history, {
       sessionId: sessionId.value,
       onEvent: async (event) => {
         if (event.error) throw new Error(event.error)
@@ -385,6 +375,19 @@ async function send() {
         }
       },
     })
+
+    // Fallback: if stream finished without any parsable events/content, retry once with non-stream.
+    if (!assistantMsg.content.trim() || (streamResult?.emittedCount ?? 0) === 0) {
+      const fallbackData = await sendChat(history, {
+        sessionId: sessionId.value,
+      })
+      if (fallbackData.session_id) sessionId.value = fallbackData.session_id
+      assistantMsg.content = String(fallbackData.reply || '未收到有效回复，请重试。')
+      if (fallbackData.intent_ready) {
+        intentReady.value = true
+        emit('intentReady', fallbackData.intent)
+      }
+    }
   } catch (e) {
     await flush()
     assistantMsg.toolTimeline
@@ -423,23 +426,6 @@ async function send() {
   display: flex;
   gap: 8px;
   align-items: center;
-}
-.agent-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: var(--text-2);
-  background: #f3f4f6;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 2px 8px;
-}
-.agent-toggle input {
-  margin: 0;
-}
-.agent-toggle.disabled {
-  opacity: 0.5;
 }
 .done-badge {
   font-size: 11px; font-weight: 600;

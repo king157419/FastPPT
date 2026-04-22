@@ -9,7 +9,6 @@ from api.download import router as download_router
 from api.asr import router as asr_router
 from api.retrieval import router as retrieval_router
 from api.knowledge import router as knowledge_router
-from api.agent import router as agent_router
 
 from core.monitoring import (
     monitoring_middleware,
@@ -64,7 +63,17 @@ def _agent_enabled() -> bool:
     return os.getenv("ENABLE_AGENT", "false").strip().lower() == "true"
 
 
-if _agent_enabled():
+def _contest_force_plain() -> bool:
+    return os.getenv("CONTEST_FORCE_PLAIN", "true").strip().lower() == "true"
+
+
+def _agent_router_enabled() -> bool:
+    return _agent_enabled() and not _contest_force_plain()
+
+
+if _agent_router_enabled():
+    from api.agent import router as agent_router
+
     app.include_router(agent_router, prefix="/api")
 
 
@@ -95,13 +104,15 @@ def root():
 async def health():
     """Health check endpoint for monitoring."""
     payload = await health_check()
-    agent_enabled = _agent_enabled()
+    agent_enabled = _agent_router_enabled()
+    contest_force_plain = _contest_force_plain()
     redis_configured = bool(os.getenv("REDIS_URL", "").strip())
     rag_mode = _resolve_rag_mode()
     payload.update(
         {
             "chat_mode": "agent" if agent_enabled else "plain",
             "agent_enabled": agent_enabled,
+            "contest_force_plain": contest_force_plain,
             "redis": "configured" if redis_configured else "skipped",
             "rag_mode": rag_mode,
             "ppt_export": _resolve_ppt_export_mode(),

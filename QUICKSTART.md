@@ -4,9 +4,11 @@
 
 ```bash
 cp backend/.env.demo backend/.env
+cp docker/.env.demo docker/.env
 ```
 
 Keep these defaults for stable demo:
+- `CONTEST_FORCE_PLAIN=true`
 - `ENABLE_AGENT=false`
 - `REDIS_URL=`
 - `RAGFLOW_*` empty
@@ -17,6 +19,12 @@ Keep these defaults for stable demo:
 
 ```bash
 docker compose -f docker/docker-compose.yml up --build
+```
+
+If you explicitly need Redis/agent runtime, add profile:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile agent up --build
 ```
 
 ### Local
@@ -46,6 +54,7 @@ curl http://localhost:8000/health
 Expected:
 - `chat_mode=plain`
 - `agent_enabled=false`
+- `contest_force_plain=true`
 - `redis=skipped`
 
 ## 4) Full demo chain
