@@ -26,9 +26,10 @@ The editing path that modifies existing `slides_json` based on user instructions
 
 - Input: existing `slides_json`, revise instruction, optional page indexes
 - Output: `RevisionPatch` plus patched `slides_json`
+- Current patch ops: `add_slide`, `delete_slide`, `move_slide`, `replace_slide`
 
 ## Known gaps
 
 - Some fallback revise behavior is still simplistic.
 - Mode A style structure-preserving updates are not fully realized.
-- Block-level patch granularity is still limited; current patch op is mostly `replace_slide`.
+- Block-level patch granularity is still limited.

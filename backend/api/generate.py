@@ -204,14 +204,14 @@ async def _run_generate(job_id: str, intent: dict, file_ids: list[str]):
 
         effective_intent = spec.to_intent()
         _jobs[job_id]["teaching_spec"] = spec.to_dict()
-        slide_plan = build_slide_plan(spec, effective_intent)
-        _jobs[job_id]["slide_plan"] = [item.to_dict() for item in slide_plan]
 
         update(5, "Resolving reference structure...")
         mode_a_info = await asyncio.get_event_loop().run_in_executor(
             None, _apply_reference_outline_context, effective_intent, file_ids
         )
         _jobs[job_id]["mode_a"] = mode_a_info
+        slide_plan = build_slide_plan(spec, effective_intent)
+        _jobs[job_id]["slide_plan"] = [item.to_dict() for item in slide_plan]
 
         update(10, "Retrieving compound knowledge...")
         knowledge_context = await asyncio.get_event_loop().run_in_executor(
