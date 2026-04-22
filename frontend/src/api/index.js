@@ -5,6 +5,73 @@ const api = axios.create({
   timeout: 120000,
 })
 
+const PPTX_KEYS = ['pptx', 'pptx_file', 'pptx_filename', 'pptx_path', 'output_pptx', 'generated_pptx']
+const DOCX_KEYS = ['docx', 'docx_file', 'docx_filename']
+
+function pickFirstString(payload, keys) {
+  if (!payload || typeof payload !== 'object') return ''
+  for (const key of keys) {
+    const value = payload[key]
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+  return ''
+}
+
+function looksLikeExt(filename, ext) {
+  return typeof filename === 'string' && filename.toLowerCase().endsWith(ext)
+}
+
+export function extractSlidesJson(payload) {
+  if (!payload || typeof payload !== 'object') return null
+
+  if (payload.slides_json && typeof payload.slides_json === 'object') return payload.slides_json
+  if (payload.slidesJson && typeof payload.slidesJson === 'object') return payload.slidesJson
+  if (payload.result?.slides_json && typeof payload.result.slides_json === 'object') return payload.result.slides_json
+  if (payload.data?.slides_json && typeof payload.data.slides_json === 'object') return payload.data.slides_json
+
+  if (Array.isArray(payload.pages)) {
+    return {
+      theme: payload.theme || {},
+      pages: payload.pages,
+      meta: payload.meta || {},
+    }
+  }
+  return null
+}
+
+export function extractPptxFilename(payload) {
+  const fromKnownKeys = pickFirstString(payload, PPTX_KEYS)
+  if (fromKnownKeys && looksLikeExt(fromKnownKeys, '.pptx')) return fromKnownKeys
+
+  const generic = pickFirstString(payload, ['file', 'filename', 'output_file'])
+  if (looksLikeExt(generic, '.pptx')) return generic
+
+  return ''
+}
+
+export function extractDocxFilename(payload) {
+  const fromKnownKeys = pickFirstString(payload, DOCX_KEYS)
+  if (fromKnownKeys && looksLikeExt(fromKnownKeys, '.docx')) return fromKnownKeys
+
+  const generic = pickFirstString(payload, ['file', 'filename', 'output_file'])
+  if (looksLikeExt(generic, '.docx')) return generic
+
+  return ''
+}
+
+export function normalizeGenerateResult(payload = {}) {
+  const slides_json = extractSlidesJson(payload)
+  const pptx = extractPptxFilename(payload)
+  const docx = extractDocxFilename(payload)
+  return {
+    ...payload,
+    slides_json: slides_json || payload.slides_json || null,
+    pptx: pptx || payload.pptx || '',
+    docx: docx || payload.docx || '',
+    message: payload.message || payload.msg || '',
+  }
+}
+
 export async function uploadFile(file) {
   const form = new FormData()
   form.append('file', file)
@@ -95,7 +162,36 @@ export async function startGenerate(intent, fileIds) {
 // 同步生成（备用）
 export async function generateCourse(intent, fileIds) {
   const res = await api.post('/generate', { intent, file_ids: fileIds })
-  return res.data
+  return normalizeGenerateResult(res.data)
+}
+
+export async function modifyCourse(payload) {
+  const endpoints = [
+    '/generate/revise',
+    '/generate/modify',
+    '/modify',
+    '/ppt/modify',
+    '/agent/modify',
+    '/agent/generate/modify',
+  ]
+
+  let lastError = null
+  for (const path of endpoints) {
+    try {
+      const res = await api.post(path, payload)
+      return normalizeGenerateResult(res.data)
+    } catch (err) {
+      const status = err?.response?.status
+      if (status === 404 || status === 405) {
+        lastError = err
+        continue
+      }
+      throw err
+    }
+  }
+
+  if (lastError) throw lastError
+  throw new Error('modify endpoint unavailable')
 }
 
 export async function getPreview(filename) {

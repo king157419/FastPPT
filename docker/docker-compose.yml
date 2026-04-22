@@ -58,7 +58,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-fastppt}:${POSTGRES_PASSWORD:-fastppt_password}@postgres:5432/${POSTGRES_DB:-fastppt}
 
       # Redis
-      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_password}@redis:6379/0
+      REDIS_URL: ${REDIS_URL:-}
       RAG_CACHE_TTL: ${RAG_CACHE_TTL:-3600}
 
       # RAGFlow (Optional)
@@ -72,6 +72,7 @@ services:
       APP_ENV: ${APP_ENV:-production}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      ENABLE_AGENT: ${ENABLE_AGENT:-false}
 
       # Monitoring
       ENABLE_METRICS: ${ENABLE_METRICS:-true}

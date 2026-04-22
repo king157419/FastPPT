@@ -8,12 +8,19 @@ Or manually: python test_langchain_agent.py
 import asyncio
 import os
 import sys
+import pytest
 
 # Fix encoding for Windows console
 if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stdout.reconfigure(encoding="utf-8")
 
-from langchain_agent import TeachingAgent, AgentConfig
+pytestmark = pytest.mark.skip(reason="Manual integration script; requires external LLM/Redis services")
+
+try:
+    from integrations.langchain_agent import TeachingAgent, AgentConfig
+except Exception:
+    TeachingAgent = None
+    AgentConfig = None
 
 
 async def test_basic_chat():
@@ -103,7 +110,7 @@ def test_imports():
     print("\n=== Testing Imports ===")
 
     try:
-        from langchain_agent import (
+        from integrations.langchain_agent import (
             TeachingAgent,
             AgentConfig,
             RedisMemoryStore,

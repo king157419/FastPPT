@@ -21,7 +21,9 @@ def test_chat_request_model():
         use_agent=True,
         session_id="test-123"
     )
-    assert req.messages == [{"role": "user", "content": "Hello"}]
+    assert len(req.messages) == 1
+    assert req.messages[0].role == "user"
+    assert req.messages[0].content == "Hello"
     assert req.stream is True
     assert req.use_agent is True
     assert req.session_id == "test-123"

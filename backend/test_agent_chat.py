@@ -2,10 +2,13 @@
 """Test agent chat method directly"""
 import os
 import asyncio
+import pytest
 
-# Set environment variables
-os.environ["DEEPSEEK_API_KEY"] = "sk-f6a3e145bcdf477a8b07d964fadf9220"
+# Set environment variables for local manual runs.
+os.environ.setdefault("DEEPSEEK_API_KEY", "")
 os.environ["REDIS_URL"] = ""
+
+pytestmark = pytest.mark.skip(reason="Manual integration script; not part of automated test suite")
 
 async def test_chat():
     print("Testing agent.chat() method...")

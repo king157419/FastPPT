@@ -381,11 +381,10 @@ class TeachingAgent:
             True if cleared successfully
         """
         try:
-            async with self.memory_store as store:
-                result = await store.delete_session(session_id)
-                logger.info(f"Session {session_id} cleared: {result}")
-                return result
-
+            existed = session_id in self._memory_cache
+            self._memory_cache.pop(session_id, None)
+            logger.info(f"Session {session_id} cleared: {existed}")
+            return existed
         except Exception as e:
             logger.error(f"Session clear failed: {e}")
             return False

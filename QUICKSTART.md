@@ -1,102 +1,73 @@
-# FastPPT 快速启动指南
+# FastPPT Quickstart (Contest)
 
-## 🚀 启动步骤
-
-### 1. 配置环境变量
+## 1) Prepare demo env
 
 ```bash
-# 复制配置模板
-cp backend/.env.example backend/.env
-
-# 编辑 backend/.env，填入你的API密钥
-# 必需：
-DEEPSEEK_API_KEY=your_key_here
-DASHSCOPE_API_KEY=your_key_here
-
-# 可选（启用RAGFlow）：
-RAGFLOW_BASE_URL=https://your-ragflow.com
-RAGFLOW_API_KEY=your_key_here
-RAGFLOW_KB_ID=your_kb_id_here
+cp backend/.env.demo backend/.env
 ```
 
-### 2. 启动方式
+Keep these defaults for stable demo:
+- `ENABLE_AGENT=false`
+- `REDIS_URL=`
+- `RAGFLOW_*` empty
 
-#### 方式A：Docker一键启动（推荐）
+## 2) Start services
+
+### Docker
 
 ```bash
-docker-compose up -d
+docker compose -f docker/docker-compose.yml up --build
 ```
 
-访问：
-- 前端：http://localhost:5173
-- 后端API：http://localhost:8000
-- API文档：http://localhost:8000/docs
+### Local
 
-#### 方式B：本地开发模式
+Backend:
 
-**终端1 - 后端**：
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-**终端2 - 前端**：
+Frontend:
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-**终端3 - PptxGenJS服务**：
-```bash
-cd services/pptxgenjs
-npm install
-node server.js
-```
-
-## 🎯 体验新型RAG系统
-
-### 1. 上传文档
+## 3) Verify runtime mode
 
 ```bash
-curl -X POST http://localhost:8000/api/retrieval/upload \
-  -F "file=@your_document.pdf" \
-  -F "kb_id=default"
+curl http://localhost:8000/health
 ```
 
-### 2. 检索知识
+Expected:
+- `chat_mode=plain`
+- `agent_enabled=false`
+- `redis=skipped`
+
+## 4) Full demo chain
+
+1. Upload one file in UI (or `/api/upload`)
+2. Chat to collect teaching intent
+3. Click generate
+4. Preview pages
+5. Download backend PPTX/DOCX
+6. Modify one page in PreviewPanel and regenerate PPTX
+
+## 5) Local quality check
 
 ```bash
-curl -X POST http://localhost:8000/api/retrieval/search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "光合作用的过程",
-    "kb_ids": ["default"],
-    "top_k": 5
-  }'
+python -m pytest -q backend
+cd frontend && npm run build
 ```
 
-### 3. 使用Agent对话
+## 6) Stable branch
 
-```bash
-curl -X POST http://localhost:8000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "messages": [{"role": "user", "content": "帮我生成光合作用的课件"}],
-    "use_agent": true
-  }'
-```
+The repo includes branch:
 
-## 📊 监控和调试
+`release/contest-demo`
 
-- 健康检查：http://localhost:8000/health
-- Prometheus指标：http://localhost:8000/metrics
-- 错误日志：http://localhost:8000/admin/errors
-- 性能统计：http://localhost:8000/admin/performance
-
-## 📚 文档
-
-- API文档：docs/API.md
-- 开发指南：docs/DEVELOPMENT.md
-- 部署文档：docs/DEPLOYMENT.md
+Use it as the baseline branch for judging/demo freeze.

@@ -7,7 +7,8 @@ import os
 import time
 import logging
 import requests
-from typing import Optional
+from typing import Optional, Any
+import base64
 
 logger = logging.getLogger(__name__)
 
@@ -257,10 +258,10 @@ def call_pptxgenjs_service(
             )
 
             if response.status_code == 200:
-                # 保存返回的 PPTX 文件
-                os.makedirs(os.path.dirname(output_path), exist_ok=True)
-                with open(output_path, "wb") as f:
-                    f.write(response.content)
+                # 兼容两种服务返回：
+                # 1) application/vnd... 二进制
+                # 2) application/json + base64（旧服务 /api/generate-ppt 风格）
+                _write_service_output_to_file(response, output_path)
 
                 duration = time.time() - start_time
                 slide_count = len(payload["pages"])
@@ -292,6 +293,173 @@ def call_pptxgenjs_service(
     duration = time.time() - start_time
     logger.warning(f"[PptxGenJS] 所有尝试失败，耗时 {duration:.2f}s")
     return None
+
+
+def _write_service_output_to_file(response: requests.Response, output_path: str) -> None:
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    content_type = (response.headers.get("Content-Type") or "").lower()
+    if "application/json" in content_type:
+        payload = response.json()
+        data_b64 = payload.get("data")
+        if not data_b64:
+            raise RuntimeError("PptxGenJS JSON 响应缺少 data(base64) 字段")
+        with open(output_path, "wb") as f:
+            f.write(base64.b64decode(data_b64))
+        return
+
+    with open(output_path, "wb") as f:
+        f.write(response.content)
+
+
+def _pages_to_slide_contents(slides_json: dict[str, Any], key_points: list[str]) -> list[dict[str, Any]]:
+    pages = slides_json.get("pages", []) if isinstance(slides_json, dict) else []
+    slide_contents: list[dict[str, Any]] = []
+    for idx, page in enumerate(pages):
+        if not isinstance(page, dict):
+            continue
+        page_type = page.get("type", "content")
+        if page_type not in {"content", "summary", "example", "code", "formula", "two_column"}:
+            continue
+
+        title = page.get("title") or (key_points[idx] if idx < len(key_points) else f"知识点{idx + 1}")
+        bullets = []
+        if isinstance(page.get("bullets"), list):
+            bullets = [str(item) for item in page.get("bullets", []) if str(item).strip()]
+        elif isinstance(page.get("takeaways"), list):
+            bullets = [str(item) for item in page.get("takeaways", []) if str(item).strip()]
+        elif page_type == "example":
+            bullets = [f"题目：{page.get('problem', '')}".strip()]
+            steps = page.get("steps") if isinstance(page.get("steps"), list) else []
+            bullets.extend([f"步骤：{str(step)}" for step in steps])
+            if page.get("answer"):
+                bullets.append(f"答案：{page.get('answer')}")
+
+        if page_type == "code" and page.get("code"):
+            bullets.append(str(page.get("code")))
+        if page_type == "formula":
+            formulas = page.get("formulas") if isinstance(page.get("formulas"), list) else []
+            for formula in formulas:
+                if isinstance(formula, dict):
+                    bullets.append(f"{formula.get('label', '公式')}：{formula.get('expr', '')}")
+                else:
+                    bullets.append(str(formula))
+        if page_type == "two_column":
+            left = page.get("left") if isinstance(page.get("left"), dict) else {}
+            right = page.get("right") if isinstance(page.get("right"), dict) else {}
+            bullets.extend([f"左列：{str(item)}" for item in left.get("points", [])])
+            bullets.extend([f"右列：{str(item)}" for item in right.get("points", [])])
+
+        bullets = [item for item in bullets if item.strip()][:8]
+        if not bullets:
+            bullets = [f"{title}核心内容", f"{title}教学要点"]
+
+        slide_contents.append(
+            {
+                "key_point": title,
+                "bullets": bullets,
+                "tip": page.get("tip", ""),
+            }
+        )
+    return slide_contents
+
+
+def _build_pptxgenjs_payload_from_slides_json(intent: dict[str, Any], slides_json: dict[str, Any], output_path: str) -> dict[str, Any]:
+    topic = intent.get("topic", "未知主题")
+    pages = slides_json.get("pages", []) if isinstance(slides_json, dict) else []
+    return {
+        "teaching_spec": {
+            "title": topic,
+            "subject": intent.get("subject", ""),
+            "teacher": intent.get("teacher", "TeachMind AI"),
+        },
+        "pages": pages,
+        "theme": "education",
+        "metadata": {
+            "author": intent.get("teacher", "TeachMind AI"),
+            "title": topic,
+            "filename": os.path.basename(output_path),
+        },
+    }
+
+
+def call_pptxgenjs_service_from_slides_json(
+    intent: dict[str, Any],
+    slides_json: dict[str, Any],
+    output_path: str,
+    service_url: Optional[str] = None,
+    timeout: int = 30,
+    max_retries: int = 2,
+) -> Optional[str]:
+    """调用 PptxGenJS 服务，根据 slides_json 直接生成 PPT。"""
+    if service_url is None:
+        service_url = os.environ.get("PPTXGENJS_SERVICE_URL", "http://localhost:3000")
+
+    endpoint = f"{service_url}/generate"
+    payload = _build_pptxgenjs_payload_from_slides_json(intent, slides_json, output_path)
+
+    start_time = time.time()
+    for attempt in range(max_retries + 1):
+        try:
+            logger.info(f"[PptxGenJS] 通过 slides_json 生成 PPT (尝试 {attempt + 1}/{max_retries + 1})")
+            response = requests.post(
+                endpoint,
+                json=payload,
+                timeout=timeout,
+                headers={"Content-Type": "application/json"},
+            )
+
+            if response.status_code == 200:
+                _write_service_output_to_file(response, output_path)
+                duration = time.time() - start_time
+                slide_count = len(payload["pages"])
+                avg_time = duration / slide_count if slide_count > 0 else 0
+                logger.info(
+                    f"[PptxGenJS] slides_json 生成成功: {slide_count} 页, "
+                    f"耗时 {duration:.2f}s ({avg_time:.2f}s/页)"
+                )
+                return output_path
+
+            logger.warning(
+                f"[PptxGenJS] slides_json 生成返回错误: {response.status_code} - {response.text[:200]}"
+            )
+        except requests.exceptions.Timeout:
+            logger.warning(f"[PptxGenJS] slides_json 请求超时 (尝试 {attempt + 1}/{max_retries + 1})")
+        except requests.exceptions.ConnectionError:
+            logger.warning(f"[PptxGenJS] slides_json 连接失败 (尝试 {attempt + 1}/{max_retries + 1})")
+        except Exception as exc:
+            logger.error(f"[PptxGenJS] slides_json 调用失败: {exc}")
+            break
+
+        if attempt < max_retries:
+            time.sleep(1)
+
+    duration = time.time() - start_time
+    logger.warning(f"[PptxGenJS] slides_json 所有尝试失败，耗时 {duration:.2f}s")
+    return None
+
+
+def generate_pptx_from_slides_json(intent: dict[str, Any], slides_json: dict[str, Any], output_path: str) -> str:
+    """
+    根据 slides_json 直接生成 .pptx。
+    优先使用 PptxGenJS 服务，失败时 fallback 到 python-pptx。
+    """
+    start_time = time.time()
+    result = call_pptxgenjs_service_from_slides_json(intent, slides_json, output_path)
+    if result:
+        duration = time.time() - start_time
+        logger.info(f"[PPT生成] slides_json 经 PptxGenJS 生成成功，总耗时 {duration:.2f}s")
+        return result
+
+    logger.info("[PPT生成] slides_json 调用 PptxGenJS 失败，fallback 到 python-pptx")
+    key_points = intent.get("key_points", ["核心概念", "基本原理", "实际应用"])
+    slide_contents = _pages_to_slide_contents(slides_json, key_points)
+    if not slide_contents:
+        slide_contents = [
+            {"key_point": kp, "bullets": [f"{kp}核心内容"], "tip": ""}
+            for kp in key_points[:3]
+        ]
+    return _generate_pptx_pythonpptx(intent, slide_contents, output_path)
 
 
 def _generate_pptx_pythonpptx(intent: dict, slide_contents: list[dict], output_path: str) -> str:

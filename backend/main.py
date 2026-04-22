@@ -9,6 +9,7 @@ from api.download import router as download_router
 from api.asr import router as asr_router
 from api.retrieval import router as retrieval_router
 from api.knowledge import router as knowledge_router
+from api.agent import router as agent_router
 
 from core.monitoring import (
     monitoring_middleware,
@@ -59,6 +60,32 @@ app.include_router(retrieval_router, prefix="/api/retrieval")
 app.include_router(knowledge_router, prefix="/api")
 
 
+def _agent_enabled() -> bool:
+    return os.getenv("ENABLE_AGENT", "false").strip().lower() == "true"
+
+
+if _agent_enabled():
+    app.include_router(agent_router, prefix="/api")
+
+
+def _resolve_rag_mode() -> str:
+    if (
+        os.getenv("RAGFLOW_BASE_URL", "").strip()
+        and os.getenv("RAGFLOW_API_KEY", "").strip()
+        and os.getenv("RAGFLOW_KB_ID", "").strip()
+    ):
+        return "ragflow"
+    if os.getenv("DASHSCOPE_API_KEY", "").strip():
+        return "vector"
+    return "tfidf"
+
+
+def _resolve_ppt_export_mode() -> str:
+    if os.getenv("PPTXGENJS_SERVICE_URL", "").strip():
+        return "pptxgenjs+python-pptx-fallback"
+    return "python-pptx"
+
+
 @app.get("/")
 def root():
     return {"status": "ok", "message": "FastPPT backend running"}
@@ -67,7 +94,21 @@ def root():
 @app.get("/health")
 async def health():
     """Health check endpoint for monitoring."""
-    return await health_check()
+    payload = await health_check()
+    agent_enabled = _agent_enabled()
+    redis_configured = bool(os.getenv("REDIS_URL", "").strip())
+    rag_mode = _resolve_rag_mode()
+    payload.update(
+        {
+            "chat_mode": "agent" if agent_enabled else "plain",
+            "agent_enabled": agent_enabled,
+            "redis": "configured" if redis_configured else "skipped",
+            "rag_mode": rag_mode,
+            "ppt_export": _resolve_ppt_export_mode(),
+            "demo_mode": (not agent_enabled and not redis_configured and rag_mode == "tfidf"),
+        }
+    )
+    return payload
 
 
 @app.get("/metrics")

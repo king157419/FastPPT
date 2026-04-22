@@ -6,11 +6,12 @@ import asyncio
 import sys
 import os
 
-# Set UTF-8 encoding for Windows console
-if sys.platform == 'win32':
+# Keep pytest capture stable: only re-wrap stdio in standalone script mode.
+if __name__ == "__main__" and sys.platform == "win32":
     import codecs
-    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
-    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+
+    sys.stdout = codecs.getwriter("utf-8")(sys.stdout.buffer, "strict")
+    sys.stderr = codecs.getwriter("utf-8")(sys.stderr.buffer, "strict")
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -51,7 +52,7 @@ def test_error_tracking():
     summary = error_tracker.get_error_summary()
     print(f"  [OK] Error summary: {summary['total_errors']} total errors")
 
-    return True
+    assert summary["total_errors"] >= 2
 
 
 def test_performance_monitoring():
@@ -69,19 +70,18 @@ def test_performance_monitoring():
     print(f"  [OK] Average duration: {stats['avg_duration']:.3f}s")
     print(f"  [OK] P95: {stats['p95']:.3f}s")
 
-    return True
+    assert stats["count"] >= 3
 
 
-async def test_health_check():
+def test_health_check():
     """Test health check functionality."""
     print("Testing health check...")
 
-    health = await health_check()
+    health = asyncio.run(health_check())
     print(f"  [OK] Status: {health['status']}")
     print(f"  [OK] Memory usage: {health['system']['memory']['percent']:.1f}%")
     print(f"  [OK] CPU usage: {health['system']['cpu']['percent']:.1f}%")
-
-    return True
+    assert health["status"] in {"healthy", "degraded"}
 
 
 def test_system_metrics():
@@ -93,24 +93,23 @@ def test_system_metrics():
     print(f"  [OK] CPU: {metrics['cpu']['percent']:.1f}%")
     print(f"  [OK] CPU cores: {metrics['cpu']['count']}")
 
-    return True
+    assert metrics["cpu"]["count"] >= 1
 
 
 @monitor_performance("test_operation")
-async def test_decorator():
+async def _exercise_decorator():
     """Test performance monitoring decorator."""
     await asyncio.sleep(0.1)
     return "success"
 
 
-async def test_performance_decorator():
+def test_performance_decorator():
     """Test the performance monitoring decorator."""
     print("Testing performance decorator...")
 
-    result = await test_decorator()
+    result = asyncio.run(_exercise_decorator())
     print(f"  [OK] Decorator test: {result}")
-
-    return True
+    assert result == "success"
 
 
 async def main():

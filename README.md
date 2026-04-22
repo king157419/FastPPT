@@ -1,114 +1,142 @@
-# 🎓 TeachMind · FastPPT — AI 智能备课系统
+# FastPPT (Contest Demo Ready)
 
-> 上传参考资料 → 多轮对话收集教学意图 → 一键生成 PPT + Word 教案
+FastPPT is an AI lesson-prep system for teachers:
 
-## 📚 文档导航（新人先看）
+`upload materials -> chat for teaching intent -> generate slides_json + PPTX + DOCX -> preview/download -> revise PPT`
 
-- `docs/README.md`：项目摘要层索引（10 分钟上手）
-- `docs/00-START-HERE.md`：代码入口、启动方式、当前系统事实
-- `docs/10-Step1-Problem-And-Needs.md`：痛点与需求结论
-- `docs/20-Step2-Product-Positioning.md`：产品定位与三档模式
-- `docs/30-Step3-Feature-Decomposition-And-Implementation.md`：功能拆解与可插拔信息块方案
-- `.omc/README-INDEX.md`：技术研究深度索引
+This repository is prepared for **contest demo stability first**.
 
-## ✨ 功能特性
+## Demo Defaults (Important)
 
-- **文件解析**：支持 PDF / Word / PPT / TXT，自动提取文本并分块入库
-- **RAG 检索**：TF-IDF 关键词检索，无需 Embedding API
-- **多轮对话**：5 轮预设追问，结构化收集教学意图
-- **PPT 生成**：深色主题，封面 + 目录 + 知识点页 + 总结页（python-pptx）
-- **Word 教案**：含教学目标、重难点、步骤、知识点详解（python-docx）
-- **PPT 预览**：后端渲染缩略图，前端实时预览翻页
+Use demo profile before running:
 
-## 🛠 技术栈
-
-| 层次 | 技术 |
-|------|------|
-| 后端 | FastAPI + uvicorn |
-| 文件解析 | pdfplumber / python-docx / python-pptx |
-| 检索 | scikit-learn TF-IDF |
-| PPT生成 | python-pptx |
-| Word生成 | python-docx |
-| 预览渲染 | Pillow |
-| 前端 | Vue 3 + Vite + Element Plus |
-
-## 🚀 快速启动
-
-### Windows 一键启动
-
-```bat
-start.bat
+```bash
+cp backend/.env.demo backend/.env
 ```
 
-### 手动启动
+Demo profile guarantees:
+- `ENABLE_AGENT=false` (agent path disabled by default)
+- `REDIS_URL=` (Redis optional, not required for demo)
+- `RAGFLOW_*` empty by default
 
-**后端**
+Check runtime mode:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Expected key fields in demo mode:
+- `chat_mode: plain`
+- `agent_enabled: false`
+- `redis: skipped`
+- `demo_mode: true`
+
+## Core Features
+
+- Multi-file upload: PDF/DOCX/PPTX/TXT + image + video
+- Intent chat: collect topic/goal/audience/difficulty/key points/duration/style
+- Generation:
+  - `slides_json` for frontend preview/edit
+  - real `PPTX` export
+  - `DOCX` lesson plan export
+- Mode A minimal support:
+  - if old PPT is uploaded, preserve reference outline order during generation
+- Per-page evidence:
+  - each generated page contains `evidence[]` from uploaded knowledge chunks
+- Revision:
+  - `/api/generate/revise` supports page-level updates and re-exports PPTX
+
+## Run
+
+### Option A: Docker (recommended for judging)
+
+```bash
+docker compose -f docker/docker-compose.yml up --build
+```
+
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:8000`
+- API docs: `http://localhost:8000/docs`
+
+### Option B: Local development
+
+Backend:
+
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-**前端**
+Frontend:
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-打开浏览器访问：**http://localhost:5173**
+## API Chain (Demo)
 
-## 📁 项目结构
+1. Upload material:
 
-```
-FastPPT/
-├── backend/
-│   ├── main.py              # FastAPI 入口
-│   ├── requirements.txt
-│   ├── api/
-│   │   ├── upload.py        # POST /api/upload
-│   │   ├── chat.py          # POST /api/chat
-│   │   ├── generate.py      # POST /api/generate
-│   │   └── download.py      # GET  /api/download|preview
-│   └── core/
-│       ├── parser.py        # 文件文本提取
-│       ├── rag.py           # TF-IDF 检索
-│       ├── intent.py        # Mock 意图提取
-│       ├── teaching_spec.py # 教学意图标准化
-│       ├── slide_blocks.py  # 可插拔信息块归一化
-│       ├── ppt_gen.py       # PPT 生成
-│       └── doc_gen.py       # Word 生成
-└── frontend/
-    ├── vite.config.js
-    └── src/
-        ├── App.vue
-        ├── api/index.js
-        └── components/
-            ├── FileUpload.vue
-            ├── ChatPanel.vue
-            ├── GenerateBtn.vue
-            └── PreviewPanel.vue
+```bash
+curl -X POST http://localhost:8000/api/upload -F "file=@example.pdf"
 ```
 
-## 📋 API 文档
+2. Chat for intent:
 
-启动后访问：http://localhost:8000/docs
+```bash
+curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"我要一节光合作用课程"}],"stream":false,"use_agent":false}'
+```
 
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| /api/upload | POST | 上传文件，返回 file_id + chunk_count |
-| /api/chat | POST | 多轮对话，返回 reply + intent_ready |
-| /api/generate | POST | 生成 PPT + Word，返回文件名 |
-| /api/download/{fn} | GET | 下载文件 |
-| /api/preview/{fn} | GET | 获取 PPT 缩略图列表 |
+3. Generate:
 
-## 📝 使用流程
+```bash
+curl -X POST http://localhost:8000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"intent":{"topic":"光合作用","teaching_goal":"理解并应用","audience":"高中生","difficulty_focus":"重点难点","key_points":["过程","影响因素"],"duration":"45分钟","style":"结构化讲解"},"file_ids":[]}'
+```
 
-1. （可选）上传参考资料（PDF/Word 等）
-2. 在对话框中依次回答 5 个问题（主题、受众、重点、难点、课时）
-3. 点击「生成课件」按钮
-4. 右侧预览 PPT，点击下载按钮获取文件
+4. Revise:
 
----
+```bash
+curl -X POST http://localhost:8000/api/generate/revise \
+  -H "Content-Type: application/json" \
+  -d '{"intent":{"topic":"光合作用"},"slides_json":{"theme":{},"pages":[{"type":"content","title":"示例","bullets":["a"]}]},"instruction":"第1页增加互动题","page_indexes":[1]}'
+```
 
-> Mock 模式：当前 AI 对话为预设问答流程，无需配置 LLM API Key 即可完整运行。
+## Verification Commands
+
+Backend critical tests:
+
+```bash
+python -m pytest -q backend
+```
+
+Frontend build:
+
+```bash
+cd frontend
+npm run build
+```
+
+## Project Layout
+
+```
+backend/
+  api/        # upload/chat/generate/download
+  core/       # llm/rag/parser/ppt/doc/evidence
+frontend/
+  src/
+    components/
+docker/
+docs/
+```
+
+## Notes
+
+- Advanced agent path is kept as optional mode and is **not** the default contest path.
+- If you intentionally enable agent mode, configure Redis and related dependencies first.

@@ -41,7 +41,11 @@
         />
       </aside>
       <section class="right-panel">
-        <PreviewPanel :slidesJson="slidesJson" />
+        <PreviewPanel
+          :slidesJson="slidesJson"
+          :generatedResult="generatedResult"
+          @slidesUpdated="onSlidesUpdated"
+        />
       </section>
     </main>
   </div>
@@ -59,11 +63,21 @@ const intentReady = ref(false)
 const intent = ref(null)
 const fileIds = ref([])
 const slidesJson = ref(null)
+const generatedResult = ref(null)
 const chatPrefill = ref(null)
 
 function onUploaded({ fileId }) { fileIds.value.push(fileId) }
 function onIntentReady(data) { intentReady.value = true; intent.value = data }
-function onGenerated(data) { slidesJson.value = data.slides_json }
+function onGenerated(data) {
+  generatedResult.value = data || null
+  slidesJson.value = data?.slides_json || null
+}
+function onSlidesUpdated(nextSlides) {
+  slidesJson.value = nextSlides
+  if (generatedResult.value) {
+    generatedResult.value = { ...generatedResult.value, slides_json: nextSlides }
+  }
+}
 function onInsertPrompt(text) {
   chatPrefill.value = { text, nonce: Date.now() }
 }

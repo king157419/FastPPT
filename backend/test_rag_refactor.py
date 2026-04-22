@@ -4,7 +4,8 @@ import sys
 import io
 
 # 设置UTF-8编码
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if __name__ == "__main__" and hasattr(sys.stdout, "buffer"):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # 设置路径
 sys.path.insert(0, os.path.dirname(__file__))

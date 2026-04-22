@@ -3,33 +3,37 @@
     <div class="panel-header">
       <div class="panel-title">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-          <rect x="2" y="3" width="20" height="14" rx="2" stroke="#0D9488" stroke-width="2"/>
-          <path d="M8 21h8M12 17v4" stroke="#0D9488" stroke-width="2" stroke-linecap="round"/>
+          <rect x="2" y="3" width="20" height="14" rx="2" stroke="#0D9488" stroke-width="2" />
+          <path d="M8 21h8M12 17v4" stroke="#0D9488" stroke-width="2" stroke-linecap="round" />
         </svg>
         <span>课件预览</span>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div class="header-actions">
         <span v-if="pages.length" class="slide-count">{{ pages.length }} 页</span>
-        <button
-          v-if="pages.length"
-          class="outline-btn"
-          @click="showBlocks = !showBlocks"
-        >
-          {{ showBlocks ? '隐藏 Block' : '显示 Block' }}
+        <button v-if="pages.length" class="outline-btn" @click="showBlocks = !showBlocks">
+          {{ showBlocks ? "隐藏 Block" : "显示 Block" }}
         </button>
-        <button v-if="pages.length" class="export-btn" @click="exportPPTX">↓ 导出 .pptx</button>
+        <a
+          v-if="backendPptxUrl"
+          class="export-btn backend"
+          :href="backendPptxUrl"
+          :download="backendPptxFilename"
+        >
+          下载后端 PPTX
+        </a>
+        <button v-if="pages.length" class="export-btn" @click="exportPPTX">导出本地 .pptx</button>
       </div>
     </div>
 
     <div v-if="!pages.length" class="empty-state">
       <div class="empty-icon">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-          <rect x="2" y="3" width="20" height="14" rx="2" stroke="#D1D5DB" stroke-width="1.5"/>
-          <path d="M8 21h8M12 17v4" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round"/>
+          <rect x="2" y="3" width="20" height="14" rx="2" stroke="#D1D5DB" stroke-width="1.5" />
+          <path d="M8 21h8M12 17v4" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round" />
         </svg>
       </div>
       <div class="empty-title">暂无预览</div>
-      <div class="empty-sub">完成对话并生成课件后，幻灯片将显示在此处</div>
+      <div class="empty-sub">完成对话并生成课件后，幻灯片将显示在此处。</div>
     </div>
 
     <template v-if="pages.length">
@@ -59,7 +63,7 @@
       <div class="nav-bar">
         <button class="nav-btn" :disabled="currentIndex <= 0" @click="currentIndex--">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
         <span class="page-counter">
@@ -69,21 +73,52 @@
         </span>
         <button class="nav-btn" :disabled="currentIndex >= pages.length - 1" @click="currentIndex++">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
+      </div>
+
+      <div class="revise-panel">
+        <input
+          v-model="reviseText"
+          class="revise-input"
+          :disabled="revising"
+          placeholder="输入修改要求，例如：第2页增加课堂互动问题"
+          @keyup.enter="handleRevise"
+        />
+        <label class="revise-toggle">
+          <input v-model="onlyCurrentPage" type="checkbox" :disabled="revising" />
+          仅修改当前页
+        </label>
+        <button class="revise-btn" :disabled="!reviseText.trim() || revising" @click="handleRevise">
+          {{ revising ? "修改中..." : "修改 PPT" }}
+        </button>
+      </div>
+
+      <div class="evidence-panel">
+        <div class="evidence-header">
+          <span>来源证据（第 {{ currentIndex + 1 }} 页）</span>
+          <button class="outline-btn" @click="showEvidence = !showEvidence">
+            {{ showEvidence ? "收起" : "展开" }}
+          </button>
+        </div>
+        <div v-if="showEvidence">
+          <div v-if="!currentEvidence.length" class="evidence-empty">当前页暂无来源证据。</div>
+          <div v-else class="evidence-list">
+            <div v-for="(item, idx) in currentEvidence" :key="idx" class="evidence-item">
+              <div class="evidence-meta">{{ evidenceLabel(item) }}</div>
+              <div class="evidence-snippet">{{ item.snippet }}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div v-if="showBlocks" class="block-panel">
         <div class="block-header">
           <span>Block 视图（第 {{ currentIndex + 1 }} 页）</span>
-          <span v-if="blockSummary" class="block-meta">
-            总块数 {{ blockSummary.total_blocks || 0 }}
-          </span>
+          <span v-if="blockSummary" class="block-meta">总块数 {{ blockSummary.total_blocks || 0 }}</span>
         </div>
-        <div v-if="!currentBlocks.length" class="block-empty">
-          当前页暂无 block 数据
-        </div>
+        <div v-if="!currentBlocks.length" class="block-empty">当前页暂无 block 数据</div>
         <div v-else class="block-list">
           <div v-for="block in currentBlocks" :key="block.id || block.type" class="block-item">
             <div class="block-top">
@@ -99,22 +134,60 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import pptxgen from 'pptxgenjs'
-import SlideRenderer from './SlideRenderer.vue'
+import { computed, ref, watch } from "vue"
+import { ElMessage } from "element-plus"
+import pptxgen from "pptxgenjs"
 
-const props = defineProps({ slidesJson: { type: Object, default: null } })
+import { downloadUrl, modifyCourse, normalizeGenerateResult } from "../api/index.js"
+import SlideRenderer from "./SlideRenderer.vue"
+
+const props = defineProps({
+  slidesJson: { type: Object, default: null },
+  generatedResult: { type: Object, default: null },
+})
+
+const emit = defineEmits(["slidesUpdated"])
+
 const currentIndex = ref(0)
 const showBlocks = ref(true)
-const theme = computed(() => props.slidesJson?.theme || { primary: '#0f172a', accent: '#0D9488', text: '#f8fafc' })
+const showEvidence = ref(true)
+const reviseText = ref("")
+const revising = ref(false)
+const onlyCurrentPage = ref(true)
+const latestPptxFilename = ref("")
+
+const theme = computed(
+  () => props.slidesJson?.theme || { primary: "#0f172a", accent: "#0D9488", text: "#f8fafc" },
+)
 const pages = computed(() => props.slidesJson?.pages || [])
 const currentPage = computed(() => pages.value[currentIndex.value] || {})
 const currentBlocks = computed(() => currentPage.value?.blocks || [])
+const currentEvidence = computed(() =>
+  Array.isArray(currentPage.value?.evidence) ? currentPage.value.evidence : [],
+)
 const blockSummary = computed(() => props.slidesJson?.meta?.block_summary || null)
-watch(() => props.slidesJson, () => { currentIndex.value = 0 })
+const normalizedResult = computed(() => normalizeGenerateResult(props.generatedResult || {}))
+const backendPptxFilename = computed(() => latestPptxFilename.value || normalizedResult.value.pptx || "")
+const backendPptxUrl = computed(() =>
+  backendPptxFilename.value ? downloadUrl(backendPptxFilename.value) : "",
+)
+
+watch(
+  () => props.slidesJson,
+  () => {
+    currentIndex.value = 0
+  },
+)
+
+watch(
+  () => props.generatedResult,
+  () => {
+    latestPptxFilename.value = ""
+  },
+)
 
 function payloadPreview(payload) {
-  if (!payload) return ''
+  if (!payload) return ""
   try {
     return JSON.stringify(payload).slice(0, 160)
   } catch {
@@ -122,9 +195,16 @@ function payloadPreview(payload) {
   }
 }
 
+function evidenceLabel(item) {
+  const fileName = item?.file_name || "unknown"
+  const where = item?.page_or_slide || "unknown"
+  const score = Number(item?.score || 0).toFixed(2)
+  return `${fileName} | ${where} | score ${score}`
+}
+
 function textBlockByRole(blocks, role) {
-  const item = blocks.find((block) => block?.type === 'TextBlock' && block?.payload?.role === role)
-  return item?.payload?.text || ''
+  const item = blocks.find((block) => block?.type === "TextBlock" && block?.payload?.role === role)
+  return item?.payload?.text || ""
 }
 
 function firstBlock(blocks, type) {
@@ -137,29 +217,77 @@ function toTextArray(value) {
 }
 
 function exportBlocksPage(slide, page, blocks, t, hex) {
-  const title = textBlockByRole(blocks, 'title') || page.title || ''
-  const subtitle = textBlockByRole(blocks, 'subtitle') || page.subtitle || ''
-  const hasHeroSlot = blocks.some((b) => b?.layoutHints?.slot === 'hero')
+  const title = textBlockByRole(blocks, "title") || page.title || ""
+  const subtitle = textBlockByRole(blocks, "subtitle") || page.subtitle || ""
+  const hasHeroSlot = blocks.some((b) => b?.layoutHints?.slot === "hero")
 
-  if (page.type === 'cover' || hasHeroSlot) {
-    slide.addShape(pptxgen.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 0.1, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-    slide.addText(title, { x: 0.5, y: 2.0, w: 12.3, h: 1.4, fontSize: 40, bold: true, color: hex(t.text), align: 'center', fontFace: 'Microsoft YaHei' })
-    slide.addText(subtitle, { x: 0.5, y: 3.6, w: 12.3, h: 0.7, fontSize: 20, color: hex(t.accent), align: 'center', fontFace: 'Microsoft YaHei' })
+  if (page.type === "cover" || hasHeroSlot) {
+    slide.addShape(pptxgen.ShapeType.rect, {
+      x: 0,
+      y: 0,
+      w: 13.33,
+      h: 0.1,
+      fill: { color: hex(t.accent) },
+      line: { color: hex(t.accent) },
+    })
+    slide.addText(title, {
+      x: 0.5,
+      y: 2.0,
+      w: 12.3,
+      h: 1.4,
+      fontSize: 40,
+      bold: true,
+      color: hex(t.text),
+      align: "center",
+      fontFace: "Microsoft YaHei",
+    })
+    slide.addText(subtitle, {
+      x: 0.5,
+      y: 3.6,
+      w: 12.3,
+      h: 0.7,
+      fontSize: 20,
+      color: hex(t.accent),
+      align: "center",
+      fontFace: "Microsoft YaHei",
+    })
     return
   }
 
-  slide.addText(title, { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-  slide.addShape(pptxgen.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
+  slide.addText(title, {
+    x: 0.7,
+    y: 0.35,
+    w: 11.9,
+    h: 0.75,
+    fontSize: 26,
+    bold: true,
+    color: hex(t.accent),
+    fontFace: "Microsoft YaHei",
+  })
+  slide.addShape(pptxgen.ShapeType.rect, {
+    x: 0.7,
+    y: 1.15,
+    w: 11.6,
+    h: 0.04,
+    fill: { color: hex(t.accent) },
+    line: { color: hex(t.accent) },
+  })
 
   let y = 1.4
-  const tipText = textBlockByRole(blocks, 'teaching_tip')
+  const tipText = textBlockByRole(blocks, "teaching_tip")
 
-  const bullet = firstBlock(blocks, 'BulletBlock')
+  const bullet = firstBlock(blocks, "BulletBlock")
   if (bullet) {
     const items = toTextArray(bullet?.payload?.items)
     const bulletData = items.map((item) => ({
       text: item,
-      options: { fontSize: 18, color: hex(t.text), bullet: { type: 'number' }, fontFace: 'Microsoft YaHei', paraSpaceAfter: 10 },
+      options: {
+        fontSize: 18,
+        color: hex(t.text),
+        bullet: { type: "number" },
+        fontFace: "Microsoft YaHei",
+        paraSpaceAfter: 10,
+      },
     }))
     if (bulletData.length) {
       slide.addText(bulletData, { x: 0.9, y, w: 11.2, h: 3.8 })
@@ -167,99 +295,74 @@ function exportBlocksPage(slide, page, blocks, t, hex) {
     }
   }
 
-  const code = firstBlock(blocks, 'CodeBlock')
+  const code = firstBlock(blocks, "CodeBlock")
   if (code) {
     const payload = code.payload || {}
-    slide.addText((payload.language || '').toUpperCase(), { x: 0.7, y, w: 2.0, h: 0.3, fontSize: 10, bold: true, color: hex(t.accent), fontFace: 'Courier New' })
-    slide.addShape(pptxgen.ShapeType.rect, { x: 0.5, y: y + 0.3, w: 12.3, h: 2.4, fill: { color: '1e293b' }, line: { color: '1e293b' } })
-    slide.addText(payload.code || '', { x: 0.7, y: y + 0.4, w: 11.9, h: 2.2, fontSize: 12, color: 'e2e8f0', fontFace: 'Courier New', valign: 'top', wrap: true })
+    slide.addText((payload.language || "").toUpperCase(), {
+      x: 0.7,
+      y,
+      w: 2.0,
+      h: 0.3,
+      fontSize: 10,
+      bold: true,
+      color: hex(t.accent),
+      fontFace: "Courier New",
+    })
+    slide.addShape(pptxgen.ShapeType.rect, {
+      x: 0.5,
+      y: y + 0.3,
+      w: 12.3,
+      h: 2.4,
+      fill: { color: "1e293b" },
+      line: { color: "1e293b" },
+    })
+    slide.addText(payload.code || "", {
+      x: 0.7,
+      y: y + 0.4,
+      w: 11.9,
+      h: 2.2,
+      fontSize: 12,
+      color: "e2e8f0",
+      fontFace: "Courier New",
+      valign: "top",
+      wrap: true,
+    })
     if (payload.explanation) {
-      slide.addText(payload.explanation, { x: 0.7, y: y + 2.8, w: 11.9, h: 0.4, fontSize: 12, color: hex(t.text), italic: true, fontFace: 'Microsoft YaHei' })
+      slide.addText(payload.explanation, {
+        x: 0.7,
+        y: y + 2.8,
+        w: 11.9,
+        h: 0.4,
+        fontSize: 12,
+        color: hex(t.text),
+        italic: true,
+        fontFace: "Microsoft YaHei",
+      })
     }
     y += 3.3
   }
 
-  const formula = firstBlock(blocks, 'FormulaBlock')
-  if (formula) {
-    const formulas = Array.isArray(formula?.payload?.formulas) ? formula.payload.formulas : []
-    let fy = y
-    for (const f of formulas.slice(0, 4)) {
-      slide.addShape(pptxgen.ShapeType.rect, { x: 0.7, y: fy, w: 0.06, h: 0.45, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-      slide.addText(`${f?.label || ''}: ${f?.expr || ''}`, { x: 0.9, y: fy, w: 11.4, h: 0.45, fontSize: 15, color: hex(t.text), fontFace: 'Microsoft YaHei' })
-      fy += 0.6
-    }
-    if (formula?.payload?.explanation) {
-      slide.addText(formula.payload.explanation, { x: 0.9, y: fy + 0.1, w: 11.4, h: 0.4, fontSize: 12, color: hex(t.text), italic: true, fontFace: 'Microsoft YaHei' })
-    }
-    y = fy + 0.6
-  }
-
-  const caseBlock = firstBlock(blocks, 'CaseBlock')
-  if (caseBlock) {
-    const payload = caseBlock.payload || {}
-    if (payload.problem) {
-      slide.addText(`题目：${payload.problem}`, { x: 0.7, y, w: 11.9, h: 0.6, fontSize: 14, color: hex(t.text), fontFace: 'Microsoft YaHei' })
-      y += 0.65
-    }
-    const steps = toTextArray(payload.steps)
-    if (steps.length) {
-      const stepData = steps.slice(0, 4).map((s, i) => ({
-        text: `Step ${i + 1}: ${s}`,
-        options: { fontSize: 12, color: hex(t.text), fontFace: 'Microsoft YaHei', paraSpaceAfter: 5 },
-      }))
-      slide.addText(stepData, { x: 0.8, y, w: 11.7, h: 1.5 })
-      y += 1.6
-    }
-    if (payload.answer) {
-      slide.addText(`答案：${payload.answer}`, { x: 0.7, y, w: 11.9, h: 0.5, fontSize: 13, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-      y += 0.6
-    }
-  }
-
-  const tableBlock = firstBlock(blocks, 'TableBlock')
-  if (tableBlock) {
-    const left = tableBlock?.payload?.left || {}
-    const right = tableBlock?.payload?.right || {}
-    slide.addText(left.heading || '', { x: 0.5, y, w: 5.8, h: 0.45, fontSize: 15, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-    slide.addText(right.heading || '', { x: 6.85, y, w: 5.8, h: 0.45, fontSize: 15, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-    const leftPoints = toTextArray(left.points).slice(0, 4).map((p) => ({ text: `• ${p}`, options: { fontSize: 12, color: hex(t.text), fontFace: 'Microsoft YaHei', paraSpaceAfter: 4 } }))
-    const rightPoints = toTextArray(right.points).slice(0, 4).map((p) => ({ text: `• ${p}`, options: { fontSize: 12, color: hex(t.text), fontFace: 'Microsoft YaHei', paraSpaceAfter: 4 } }))
-    if (leftPoints.length) slide.addText(leftPoints, { x: 0.5, y: y + 0.5, w: 5.8, h: 1.8 })
-    if (rightPoints.length) slide.addText(rightPoints, { x: 6.85, y: y + 0.5, w: 5.8, h: 1.8 })
-    slide.addShape(pptxgen.ShapeType.rect, { x: 6.55, y, w: 0.05, h: 2.3, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-    y += 2.5
-  }
-
-  const imageBlock = firstBlock(blocks, 'ImageBlock')
-  if (imageBlock?.payload?.image_base64) {
-    slide.addImage({ data: `data:image/jpeg;base64,${imageBlock.payload.image_base64}`, x: 1.8, y, w: 9.7, h: 2.7, sizing: { type: 'contain', w: 9.7, h: 2.7 } })
-    if (imageBlock?.payload?.caption) {
-      slide.addText(imageBlock.payload.caption, { x: 0.7, y: y + 2.75, w: 11.9, h: 0.3, fontSize: 11, color: hex(t.text), italic: true, align: 'center', fontFace: 'Microsoft YaHei' })
-    }
-    y += 3.1
-  }
-
-  const flowchartBlock = firstBlock(blocks, 'FlowchartBlock')
-  if (flowchartBlock) {
-    slide.addText(`[流程图模板: ${flowchartBlock?.payload?.template || 'flowchart'}]`, { x: 0.9, y, w: 11.5, h: 0.45, fontSize: 12, color: hex(t.text), italic: true, fontFace: 'Microsoft YaHei' })
-    y += 0.5
-  }
-
-  const quoteText = textBlockByRole(blocks, 'quote')
-  if (quoteText) {
-    slide.addText(quoteText, { x: 0.9, y, w: 11.5, h: 0.9, fontSize: 18, color: hex(t.accent), italic: true, align: 'center', fontFace: 'Microsoft YaHei' })
-  }
-
-  if (tipText) {
-    slide.addText(`💡 ${tipText}`, { x: 0.6, y: 6.6, w: 12.1, h: 0.35, fontSize: 11, color: 'FFD700', italic: true, align: 'right', fontFace: 'Microsoft YaHei' })
+  const tip = tipText ? `提示：${tipText}` : ""
+  if (tip) {
+    slide.addText(tip, {
+      x: 0.6,
+      y: 6.6,
+      w: 12.1,
+      h: 0.35,
+      fontSize: 11,
+      color: "FFD700",
+      italic: true,
+      align: "right",
+      fontFace: "Microsoft YaHei",
+    })
   }
 }
 
 async function exportPPTX() {
   const pptx = new pptxgen()
-  pptx.layout = 'LAYOUT_WIDE'
+  pptx.layout = "LAYOUT_WIDE"
   const t = theme.value
-  const hex = c => c.replace('#', '')
+  const hex = (c) => c.replace("#", "")
 
   for (const page of pages.value) {
     const slide = pptx.addSlide()
@@ -271,173 +374,397 @@ async function exportPPTX() {
       continue
     }
 
-    if (page.type === 'cover') {
-      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 0.1, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-      slide.addText(page.title || '', { x: 0.5, y: 2.0, w: 12.3, h: 1.4, fontSize: 40, bold: true, color: hex(t.text), align: 'center', fontFace: 'Microsoft YaHei' })
-      slide.addText(page.subtitle || '', { x: 0.5, y: 3.6, w: 12.3, h: 0.7, fontSize: 20, color: hex(t.accent), align: 'center', fontFace: 'Microsoft YaHei' })
-    } else if (page.type === 'agenda') {
-      slide.addText(page.title || '目录', { x: 0.7, y: 0.4, w: 11.9, h: 0.8, fontSize: 28, bold: true, color: hex(t.text), fontFace: 'Microsoft YaHei' })
-      const items = (page.items || []).map((item, i) => ({ text: `${i + 1}.  ${item}`, options: { fontSize: 20, color: hex(t.text), fontFace: 'Microsoft YaHei', paraSpaceAfter: 10 } }))
+    if (page.type === "cover") {
+      slide.addShape(pptx.ShapeType.rect, {
+        x: 0,
+        y: 0,
+        w: 13.33,
+        h: 0.1,
+        fill: { color: hex(t.accent) },
+        line: { color: hex(t.accent) },
+      })
+      slide.addText(page.title || "", {
+        x: 0.5,
+        y: 2.0,
+        w: 12.3,
+        h: 1.4,
+        fontSize: 40,
+        bold: true,
+        color: hex(t.text),
+        align: "center",
+        fontFace: "Microsoft YaHei",
+      })
+      slide.addText(page.subtitle || "", {
+        x: 0.5,
+        y: 3.6,
+        w: 12.3,
+        h: 0.7,
+        fontSize: 20,
+        color: hex(t.accent),
+        align: "center",
+        fontFace: "Microsoft YaHei",
+      })
+    } else if (page.type === "agenda") {
+      slide.addText(page.title || "目录", {
+        x: 0.7,
+        y: 0.4,
+        w: 11.9,
+        h: 0.8,
+        fontSize: 28,
+        bold: true,
+        color: hex(t.text),
+        fontFace: "Microsoft YaHei",
+      })
+      const items = (page.items || []).map((item, i) => ({
+        text: `${i + 1}. ${item}`,
+        options: { fontSize: 20, color: hex(t.text), fontFace: "Microsoft YaHei", paraSpaceAfter: 10 },
+      }))
       slide.addText(items, { x: 1.2, y: 1.5, w: 10, h: 5 })
-    } else if (page.type === 'content') {
-      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-      const bullets = (page.bullets || []).map(b => ({ text: b, options: { fontSize: 18, color: hex(t.text), bullet: { type: 'number' }, fontFace: 'Microsoft YaHei', paraSpaceAfter: 12 } }))
-      slide.addText(bullets, { x: 0.9, y: 1.4, w: 11.2, h: 4.5 })
-      if (page.tip) slide.addText('💡 ' + page.tip, { x: 0.5, y: 6.6, w: 12.3, h: 0.5, fontSize: 12, color: 'FFD700', italic: true, fontFace: 'Microsoft YaHei', align: 'right' })
-    } else if (page.type === 'code') {
-      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-      slide.addText((page.language || '').toUpperCase(), { x: 0.7, y: 1.25, w: 2, h: 0.3, fontSize: 10, bold: true, color: hex(t.accent), fontFace: 'Courier New' })
-      slide.addShape(pptx.ShapeType.rect, { x: 0.5, y: 1.6, w: 12.3, h: 4.0, fill: { color: '1e293b' }, line: { color: '1e293b' } })
-      slide.addText(page.code || '', { x: 0.7, y: 1.7, w: 11.9, h: 3.8, fontSize: 13, color: 'e2e8f0', fontFace: 'Courier New', valign: 'top', wrap: true })
-      if (page.explanation) slide.addText(page.explanation, { x: 0.7, y: 5.75, w: 11.9, h: 0.5, fontSize: 13, color: hex(t.text), italic: true, fontFace: 'Microsoft YaHei' })
-    } else if (page.type === 'formula') {
-      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-      let fy = 1.5
-      for (const f of (page.formulas || [])) {
-        slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: fy, w: 0.06, h: 0.55, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-        slide.addText([{ text: (f.label || '') + ':  ', options: { bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' } }, { text: f.expr || '', options: { italic: true, color: hex(t.text), fontFace: 'Georgia' } }], { x: 0.9, y: fy, w: 11.4, h: 0.55, fontSize: 22 })
-        fy += 0.75
+    } else {
+      slide.addText(page.title || "", {
+        x: 0.7,
+        y: 0.35,
+        w: 11.9,
+        h: 0.75,
+        fontSize: 26,
+        bold: true,
+        color: hex(t.accent),
+        fontFace: "Microsoft YaHei",
+      })
+      const bullets = (page.bullets || page.takeaways || []).map((b) => ({
+        text: String(b),
+        options: {
+          fontSize: 18,
+          color: hex(t.text),
+          bullet: { type: "bullet" },
+          fontFace: "Microsoft YaHei",
+          paraSpaceAfter: 12,
+        },
+      }))
+      if (bullets.length) {
+        slide.addText(bullets, { x: 0.9, y: 1.4, w: 11.2, h: 4.8 })
       }
-      if (page.explanation) slide.addText(page.explanation, { x: 0.9, y: fy + 0.2, w: 11.4, h: 0.6, fontSize: 14, color: hex(t.text), italic: true, fontFace: 'Microsoft YaHei' })
-    } else if (page.type === 'example') {
-      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-      slide.addText('题目：' + (page.problem || ''), { x: 0.7, y: 1.3, w: 11.9, h: 0.8, fontSize: 17, color: hex(t.text), fontFace: 'Microsoft YaHei', bold: false })
-      const steps = (page.steps || []).map((s, i) => ({ text: `Step ${i + 1}：${s}`, options: { fontSize: 15, color: hex(t.text), fontFace: 'Microsoft YaHei', paraSpaceAfter: 6 } }))
-      if (steps.length) slide.addText(steps, { x: 0.7, y: 2.2, w: 11.9, h: 3.2 })
-      if (page.answer) slide.addText('✓  ' + page.answer, { x: 0.7, y: 5.6, w: 11.9, h: 0.65, fontSize: 17, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-    } else if (page.type === 'two_column') {
-      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-      slide.addText(page.left?.heading || '', { x: 0.5, y: 1.3, w: 5.8, h: 0.55, fontSize: 18, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-      const lpts = (page.left?.points || []).map(p => ({ text: '•  ' + p, options: { fontSize: 15, color: hex(t.text), fontFace: 'Microsoft YaHei', paraSpaceAfter: 8 } }))
-      if (lpts.length) slide.addText(lpts, { x: 0.5, y: 2.0, w: 5.8, h: 4.5 })
-      slide.addShape(pptx.ShapeType.rect, { x: 6.55, y: 1.25, w: 0.05, h: 5.0, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-      slide.addText(page.right?.heading || '', { x: 6.85, y: 1.3, w: 5.8, h: 0.55, fontSize: 18, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-      const rpts = (page.right?.points || []).map(p => ({ text: '•  ' + p, options: { fontSize: 15, color: hex(t.text), fontFace: 'Microsoft YaHei', paraSpaceAfter: 8 } }))
-      if (rpts.length) slide.addText(rpts, { x: 6.85, y: 2.0, w: 5.8, h: 4.5 })
-    } else if (page.type === 'animation') {
-      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-      slide.addText(`[互动动画: ${page.template || ''}]`, { x: 1.5, y: 2.5, w: 10.3, h: 2, fontSize: 18, color: hex(t.text), align: 'center', italic: true, fontFace: 'Microsoft YaHei' })
-    } else if (page.type === 'image') {
-      slide.addText(page.title || '', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.accent), fontFace: 'Microsoft YaHei' })
-      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-      if (page.image_base64) {
-        slide.addImage({ data: 'data:image/jpeg;base64,' + page.image_base64, x: 1.5, y: 1.5, w: 10.3, h: 4.8, sizing: { type: 'contain', w: 10.3, h: 4.8 } })
-      }
-      if (page.caption) slide.addText(page.caption, { x: 0.7, y: 6.5, w: 11.9, h: 0.4, fontSize: 12, color: hex(t.text), italic: true, align: 'center', fontFace: 'Microsoft YaHei' })
-    } else if (page.type === 'quote') {
-      slide.addText(page.text || '', { x: 1, y: 2.5, w: 11.3, h: 2, fontSize: 28, color: hex(t.accent), align: 'center', italic: true, fontFace: 'Microsoft YaHei' })
-    } else if (page.type === 'summary') {
-      slide.addText(page.title || '课程总结', { x: 0.7, y: 0.35, w: 11.9, h: 0.75, fontSize: 26, bold: true, color: hex(t.text), fontFace: 'Microsoft YaHei' })
-      slide.addShape(pptx.ShapeType.rect, { x: 0.7, y: 1.15, w: 11.6, h: 0.04, fill: { color: hex(t.accent) }, line: { color: hex(t.accent) } })
-      const items = (page.takeaways || []).map(tw => ({ text: '✓  ' + tw, options: { fontSize: 20, color: hex(t.accent), fontFace: 'Microsoft YaHei', paraSpaceAfter: 14 } }))
-      slide.addText(items, { x: 1.2, y: 1.6, w: 10, h: 4.5 })
     }
   }
-  await pptx.writeFile({ fileName: '课件.pptx' })
+  await pptx.writeFile({ fileName: "课件.pptx" })
+}
+
+async function handleRevise() {
+  const instruction = reviseText.value.trim()
+  if (!instruction) {
+    ElMessage.warning("请先输入修改要求")
+    return
+  }
+
+  revising.value = true
+  try {
+    const page_indexes = onlyCurrentPage.value ? [currentIndex.value + 1] : []
+    const payload = {
+      intent: props.generatedResult?.teaching_spec || props.generatedResult?.intent || {},
+      slides_json: props.slidesJson || {},
+      instruction,
+      page_indexes,
+    }
+    const res = await modifyCourse(payload)
+    const normalized = normalizeGenerateResult(res || {})
+    if (!normalized.slides_json) {
+      throw new Error("后端未返回 slides_json")
+    }
+    emit("slidesUpdated", normalized.slides_json)
+    if (normalized.pptx) latestPptxFilename.value = normalized.pptx
+    reviseText.value = ""
+    ElMessage.success(normalized.message || "课件修改已完成")
+  } catch (err) {
+    ElMessage.error(`课件修改失败：${err?.response?.data?.detail || err.message}`)
+  } finally {
+    revising.value = false
+  }
 }
 </script>
 
 <style scoped>
 .preview-panel {
-  height: 100%; display: flex; flex-direction: column; gap: 12px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
-  padding: 16px; overflow: hidden;
+  padding: 16px;
+  overflow: hidden;
 }
 .panel-header {
-  display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
 }
 .panel-title {
-  display: flex; align-items: center; gap: 7px;
-  font-size: 13px; font-weight: 600; color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 .slide-count {
-  font-size: 11px; color: var(--teal);
-  background: var(--teal-light); padding: 2px 9px; border-radius: 99px;
+  font-size: 11px;
+  color: var(--teal);
+  background: var(--teal-light);
+  padding: 2px 9px;
+  border-radius: 99px;
 }
 .outline-btn {
-  font-size: 11px; padding: 4px 10px; border-radius: var(--radius-sm);
-  background: #fff; color: var(--text-2); border: 1px solid var(--border);
-  cursor: pointer; font-weight: 600;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-weight: 600;
 }
 .outline-btn:hover {
   border-color: var(--teal);
   color: var(--teal);
 }
 .export-btn {
-  font-size: 11px; padding: 4px 12px; border-radius: var(--radius-sm);
-  background: var(--teal); color: white; border: none;
-  cursor: pointer; font-weight: 600; transition: background 0.2s;
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
 }
-.export-btn:hover { background: #0F766E; }
+.export-btn.backend {
+  background: #0f766e;
+}
 .empty-state {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 12px; color: var(--text-3);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-3);
 }
-.empty-icon { opacity: 0.5; }
-.empty-title { font-size: 15px; font-weight: 500; color: var(--text-2); }
-.empty-sub { font-size: 12px; color: var(--text-3); text-align: center; max-width: 240px; line-height: 1.5; }
+.empty-icon {
+  opacity: 0.5;
+}
+.empty-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.empty-sub {
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: center;
+  max-width: 240px;
+  line-height: 1.5;
+}
 .thumb-strip {
-  display: flex; gap: 8px; overflow-x: auto; flex-shrink: 0; padding-bottom: 4px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  padding-bottom: 4px;
 }
-.thumb-strip::-webkit-scrollbar { height: 3px; }
-.thumb-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .thumb {
-  flex-shrink: 0; position: relative; cursor: pointer;
-  border-radius: 6px; overflow: hidden;
-  border: 2px solid transparent; transition: all 0.2s;
-  width: 110px; height: 62px; aspect-ratio: 16/9;
+  flex-shrink: 0;
+  position: relative;
+  cursor: pointer;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  width: 110px;
+  height: 62px;
+  aspect-ratio: 16/9;
   background: #000;
 }
-.thumb-inner { width: 100%; height: 100%; }
-.thumb:hover { transform: translateY(-2px); border-color: var(--teal-mid); box-shadow: var(--shadow-md); }
-.thumb.active { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal-light); }
+.thumb.active {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px var(--teal-light);
+}
+.thumb-inner {
+  width: 100%;
+  height: 100%;
+}
 .thumb-num {
-  position: absolute; bottom: 3px; right: 4px;
-  font-size: 9px; font-family: monospace;
-  color: white; background: rgba(0,0,0,0.45);
-  padding: 1px 4px; border-radius: 3px; z-index: 2;
+  position: absolute;
+  bottom: 3px;
+  right: 4px;
+  font-size: 9px;
+  font-family: monospace;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 1px 4px;
+  border-radius: 3px;
+  z-index: 2;
 }
 .main-view {
-  flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden;
-  padding: 12px; min-height: 0; container-type: size;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 12px;
+  min-height: 0;
+  container-type: size;
 }
 .main-slide {
   aspect-ratio: 16/9;
   width: min(100cqw, calc(100cqh * 16 / 9));
-  border-radius: 10px; overflow: hidden;
+  border-radius: 10px;
+  overflow: hidden;
   box-shadow: var(--shadow-lg);
   flex-shrink: 0;
 }
 .nav-bar {
-  display: flex; align-items: center; justify-content: center;
-  gap: 16px; flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-shrink: 0;
 }
 .nav-btn {
-  width: 32px; height: 32px; border-radius: var(--radius-sm);
-  border: 1px solid var(--border); cursor: pointer;
-  background: var(--bg); color: var(--text-2);
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.nav-btn:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); background: var(--teal-light); }
-.nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.page-counter { display: flex; align-items: baseline; gap: 3px; }
-.page-cur { font-size: 18px; font-weight: 700; color: var(--teal); font-family: monospace; }
-.page-sep { font-size: 13px; color: var(--text-3); }
-.page-total { font-size: 13px; color: var(--text-3); font-family: monospace; }
-.slide-fade-enter-active, .slide-fade-leave-active { transition: all 0.2s ease; }
-.slide-fade-enter-from { opacity: 0; transform: scale(0.99); }
-.slide-fade-leave-to { opacity: 0; }
-
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.page-counter {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.page-cur {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--teal);
+  font-family: monospace;
+}
+.page-sep,
+.page-total {
+  font-size: 13px;
+  color: var(--text-3);
+}
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.2s ease;
+}
+.slide-fade-enter-from {
+  opacity: 0;
+  transform: scale(0.99);
+}
+.slide-fade-leave-to {
+  opacity: 0;
+}
+.revise-panel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+}
+.revise-input {
+  flex: 1;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 12px;
+  outline: none;
+}
+.revise-input:focus {
+  border-color: var(--teal);
+}
+.revise-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+.revise-btn {
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: var(--teal);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.revise-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.evidence-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+}
+.evidence-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+}
+.evidence-empty {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.evidence-list {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.evidence-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 6px 8px;
+}
+.evidence-meta {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--teal);
+}
+.evidence-snippet {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-2);
+  line-height: 1.45;
+  word-break: break-word;
+}
 .block-panel {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);

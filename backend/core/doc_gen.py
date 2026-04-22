@@ -1,107 +1,99 @@
-"""使用 python-docx 生成 Word 教案"""
-from docx import Document
-from docx.shared import Pt, RGBColor, Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+"""Generate a lesson-plan DOCX file from intent + retrieval context."""
+from __future__ import annotations
+
 import datetime
+from typing import Any
+
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Pt, RGBColor
 
 
-def generate_docx(intent: dict, rag_chunks: list[str], output_path: str) -> str:
-    topic = intent.get("topic", "未知主题")
-    audience = intent.get("audience", "学生")
-    key_points = intent.get("key_points", ["核心概念", "基本原理", "实际应用"])
-    duration = intent.get("duration", "45分钟")
-    style = intent.get("style", "简洁学术")
-    today = datetime.date.today().strftime("%Y年%m月%d日")
+def _safe_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def generate_docx(
+    intent: dict,
+    rag_chunks: list[str],
+    output_path: str,
+    evidence_entries: list[dict[str, Any]] | None = None,
+) -> str:
+    topic = str(intent.get("topic") or "Course Topic")
+    audience = str(intent.get("audience") or "Learners")
+    duration = str(intent.get("duration") or "45 minutes")
+    style = str(intent.get("style") or "Structured")
+    teaching_goal = str(intent.get("teaching_goal") or "Help learners understand and apply key concepts.")
+    difficulty_focus = str(intent.get("difficulty_focus") or "Key difficult points")
+    key_points = _safe_list(intent.get("key_points")) or ["Core concept", "Principle", "Application"]
+    today = datetime.date.today().strftime("%Y-%m-%d")
 
     doc = Document()
 
-    # 标题
-    title = doc.add_heading(f"《{topic}》教学设计方案", level=0)
+    title = doc.add_heading(f"{topic} - Lesson Plan", level=0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # 基本信息表格
-    doc.add_paragraph()
-    table = doc.add_table(rows=4, cols=2)
-    table.style = "Table Grid"
-    data = [
-        ("课程主题", topic),
-        ("目标受众", audience),
-        ("计划课时", duration),
-        ("课件风格", style),
+    info = doc.add_table(rows=5, cols=2)
+    info.style = "Table Grid"
+    rows = [
+        ("Topic", topic),
+        ("Audience", audience),
+        ("Duration", duration),
+        ("Style", style),
+        ("Generated At", today),
     ]
-    for i, (k, v) in enumerate(data):
-        table.rows[i].cells[0].text = k
-        table.rows[i].cells[1].text = v
+    for idx, (k, v) in enumerate(rows):
+        info.rows[idx].cells[0].text = k
+        info.rows[idx].cells[1].text = v
 
-    doc.add_paragraph()
+    doc.add_heading("Teaching Goal", level=1)
+    doc.add_paragraph(teaching_goal)
 
-    # 一、教学目标
-    doc.add_heading("一、教学目标", level=1)
-    goals = [
-        f"知识目标：理解{topic}的基本概念、原理和应用场景",
-        f"能力目标：能够运用{topic}相关知识分析和解决实际问题",
-        "情感目标：培养学生对本课程的学习兴趣与探究精神",
-    ]
-    for g in goals:
+    doc.add_heading("Difficulty Focus", level=1)
+    doc.add_paragraph(difficulty_focus)
+
+    doc.add_heading("Key Points", level=1)
+    for item in key_points:
         p = doc.add_paragraph(style="List Bullet")
-        p.add_run(g)
+        p.add_run(item)
 
-    # 二、重点与难点
-    doc.add_heading("二、重点与难点", level=1)
-    doc.add_paragraph("【教学重点】")
-    for kp in key_points[:2]:
-        p = doc.add_paragraph(style="List Bullet")
-        p.add_run(kp)
-    doc.add_paragraph("【教学难点】")
-    for kp in key_points[2:] or key_points[-1:]:
-        p = doc.add_paragraph(style="List Bullet")
-        p.add_run(kp)
-
-    # 三、教学步骤
-    doc.add_heading("三、教学步骤", level=1)
-    steps = [
-        ("导入（5分钟）", f"通过提问或案例引入{topic}的概念，激发学生兴趣"),
-        ("新课讲授（25分钟）", "逐一讲解各知识点，结合板书和课件演示"),
-        ("互动讨论（10分钟）", "学生分组讨论，教师巡回指导"),
-        ("课堂小结（5分钟）", "梳理本节课核心内容，强调重难点"),
+    doc.add_heading("Suggested Teaching Flow", level=1)
+    flow = [
+        ("Warm-up (5 min)", "Introduce a practical scenario and activate prior knowledge."),
+        ("Concept Explanation (15 min)", "Explain core concepts and connect them with examples."),
+        ("Guided Practice (15 min)", "Lead students through one or two representative tasks."),
+        ("Wrap-up (10 min)", "Summarize takeaways and assign extension work."),
     ]
-    for step_title, step_content in steps:
-        doc.add_heading(step_title, level=2)
-        doc.add_paragraph(step_content)
+    for section, desc in flow:
+        doc.add_heading(section, level=2)
+        doc.add_paragraph(desc)
 
-    # 四、知识点详解
-    doc.add_heading("四、知识点详解", level=1)
-    for i, kp in enumerate(key_points):
-        doc.add_heading(f"{i+1}. {kp}", level=2)
-        doc.add_paragraph(f"{kp}是本课程的重要组成部分。")
-        if i < len(rag_chunks) and rag_chunks[i]:
-            doc.add_paragraph("【参考资料摘录】")
-            p = doc.add_paragraph(rag_chunks[i][:300])
-            p.runs[0].font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+    doc.add_heading("Reference Snippets", level=1)
+    if rag_chunks:
+        for idx, chunk in enumerate(rag_chunks[:8], start=1):
+            doc.add_heading(f"Snippet {idx}", level=2)
+            p = doc.add_paragraph(str(chunk)[:500])
+            if p.runs:
+                p.runs[0].font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+    else:
+        doc.add_paragraph("No retrieval snippets were provided for this generation.")
 
-    # 五、板书设计
-    doc.add_heading("五、板书设计", level=1)
-    doc.add_paragraph(f"课题：{topic}")
-    for i, kp in enumerate(key_points):
-        doc.add_paragraph(f"  {i+1}. {kp}")
+    if evidence_entries:
+        doc.add_heading("Reference Evidence", level=1)
+        for item in evidence_entries[:20]:
+            file_name = str(item.get("file_name") or "unknown")
+            location = str(item.get("page_or_slide") or "unknown")
+            snippet = str(item.get("snippet") or "")[:260]
+            p = doc.add_paragraph(style="List Number")
+            p.add_run(f"{file_name} | {location}\n{snippet}")
 
-    # 六、作业布置
-    doc.add_heading("六、作业布置", level=1)
-    assignments = [
-        f"复习本节课{topic}的核心概念，整理笔记",
-        f"完成课后练习题第1-3题",
-        f"预习下一节内容，思考{topic}在实际中的应用案例",
-    ]
-    for a in assignments:
-        p = doc.add_paragraph(style="List Number")
-        p.add_run(a)
-
-    # 页脚
-    doc.add_paragraph()
-    footer_p = doc.add_paragraph(f"本教案由 TeachMind AI 智能备课系统生成 · {today}")
-    footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    footer_p.runs[0].font.size = Pt(9)
-    footer_p.runs[0].font.color.rgb = RGBColor(0x99, 0x99, 0x99)
+    footer = doc.add_paragraph(f"Generated by FastPPT on {today}")
+    footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    if footer.runs:
+        footer.runs[0].font.size = Pt(9)
+        footer.runs[0].font.color.rgb = RGBColor(0x99, 0x99, 0x99)
 
     doc.save(output_path)
     return output_path

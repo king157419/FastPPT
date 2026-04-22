@@ -59,10 +59,18 @@
       <div v-if="result" class="result-card">
         <div class="result-header">
           <span class="result-icon">🎉</span>
-          <span class="result-msg">{{ result.message }}</span>
+          <span class="result-msg">{{ result.message || '课件生成成功' }}</span>
         </div>
-        <div class="dl-row">
-          <a class="dl-btn" :href="docxUrl" :download="result.docx">
+        <div class="dl-row" v-if="pptxFilename || docxFilename">
+          <a v-if="pptxFilename" class="dl-btn" :href="pptxUrl" :download="pptxFilename">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            下载 PPT 课件
+          </a>
+          <a v-if="docxFilename" class="dl-btn" :href="docxUrl" :download="docxFilename">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -78,7 +86,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { startGenerate, generateCourse, downloadUrl, generateStreamUrl } from '../api/index.js'
+import { startGenerate, generateCourse, downloadUrl, generateStreamUrl, normalizeGenerateResult } from '../api/index.js'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps({
@@ -95,7 +103,12 @@ const teachingGoal = ref('')
 const audienceField = ref('')
 const difficultyField = ref('')
 
-const docxUrl = computed(() => result.value ? downloadUrl(result.value.docx) : '#')
+const normalizedResult = computed(() => normalizeGenerateResult(result.value || {}))
+const docxFilename = computed(() => normalizedResult.value.docx)
+const pptxFilename = computed(() => normalizedResult.value.pptx)
+const docxUrl = computed(() => docxFilename.value ? downloadUrl(docxFilename.value) : '#')
+const pptxUrl = computed(() => pptxFilename.value ? downloadUrl(pptxFilename.value) : '#')
+
 const missingFields = computed(() => {
   const missing = []
   if (!teachingGoal.value.trim()) missing.push('教学目标')
@@ -124,6 +137,15 @@ function buildEffectiveIntent() {
   }
 }
 
+function applyGenerateResult(payload) {
+  const normalized = normalizeGenerateResult(payload)
+  result.value = {
+    ...normalized,
+    message: normalized.message || '课件生成成功',
+  }
+  emit('generated', result.value)
+}
+
 async function handleGenerate() {
   if (missingFields.value.length) {
     ElMessage.warning(`请先补齐：${missingFields.value.join('、')}`)
@@ -137,7 +159,6 @@ async function handleGenerate() {
   const effectiveIntent = buildEffectiveIntent()
 
   try {
-    // 尝试异步 SSE 模式
     const { job_id } = await startGenerate(effectiveIntent, props.fileIds || [])
     await new Promise((resolve, reject) => {
       const es = new EventSource(generateStreamUrl(job_id))
@@ -147,24 +168,27 @@ async function handleGenerate() {
         progressMsg.value = data.message || ''
         if (data.done) {
           es.close()
-          if (data.error) { reject(new Error(data.error)); return }
-          result.value = { slides_json: data.slides_json, docx: data.docx, message: '课件生成成功！' }
-          emit('generated', result.value)
-          ElMessage.success('课件生成成功！')
+          if (data.error) {
+            reject(new Error(data.error))
+            return
+          }
+          applyGenerateResult(data)
+          ElMessage.success('课件生成成功')
           resolve()
         }
       }
-      es.onerror = () => { es.close(); reject(new Error('SSE 连接失败')) }
+      es.onerror = () => {
+        es.close()
+        reject(new Error('SSE 连接失败'))
+      }
     })
-  } catch (e) {
-    // fallback 同步模式
+  } catch {
     try {
       progressMsg.value = '正在生成...'
       const data = await generateCourse(effectiveIntent, props.fileIds || [])
-      result.value = data
+      applyGenerateResult(data)
       progress.value = 100
-      ElMessage.success(data.message)
-      emit('generated', data)
+      ElMessage.success(result.value?.message || '课件生成成功')
     } catch (e2) {
       ElMessage.error('生成失败：' + (e2.response?.data?.detail || e2.message))
     }
@@ -288,7 +312,12 @@ async function handleGenerate() {
 .result-icon { font-size: 15px; }
 .result-msg { font-size: 12px; color: #059669; font-weight: 500; }
 
-.dl-row { padding: 10px 12px; }
+.dl-row {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .dl-btn {
   display: flex; align-items: center; justify-content: center; gap: 7px;
   padding: 9px 14px; border-radius: var(--radius-sm);
