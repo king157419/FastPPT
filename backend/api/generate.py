@@ -17,6 +17,12 @@ from core.compound_knowledge import get_knowledge_store
 from core.doc_gen import generate_docx
 from core.llm import generate_slides_json, revise_slides_json
 from core.ppt_gen import generate_pptx_from_slides_json
+from core.slide_pipeline import (
+    apply_revision_patch,
+    build_revision_patch,
+    build_slide_plan,
+    generate_slide_drafts,
+)
 from core.slide_blocks import attach_blocks_to_slides_json
 from core.teaching_spec import compile_teaching_spec
 
@@ -54,9 +60,16 @@ def generate(req: GenerateRequest):
 
     rag_bundle = _collect_rag_and_evidence(effective_intent, req.file_ids)
     rag_chunks = rag_bundle["chunks"]
+    slide_plan = build_slide_plan(spec, effective_intent)
 
     try:
-        slides_json_raw = generate_slides_json(effective_intent, rag_chunks)
+        slides_json_raw, slide_drafts = generate_slide_drafts(
+            spec=spec,
+            intent=effective_intent,
+            rag_chunks=rag_chunks,
+            slide_plan=slide_plan,
+            generator=generate_slides_json,
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Slide generation failed: {exc}") from exc
 
@@ -89,6 +102,8 @@ def generate(req: GenerateRequest):
         "docx": docx_name,
         "message": f"Generation succeeded, total {len(slides_json.get('pages', []))} pages",
         "teaching_spec": spec.to_dict(),
+        "slide_plan": [item.to_dict() for item in slide_plan],
+        "slide_drafts": [item.to_dict() for item in slide_drafts],
         "block_summary": block_summary,
         "compound_factor": compound_factor,
         "mode_a": mode_a_info,
@@ -111,6 +126,8 @@ async def generate_start(req: GenerateRequest):
         "pptx": None,
         "docx": None,
         "teaching_spec": None,
+        "slide_plan": None,
+        "slide_drafts": None,
         "block_summary": None,
         "compound_factor": 0.0,
         "mode_a": {"enabled": False, "outline_size": 0, "source_file": ""},
@@ -147,6 +164,8 @@ async def generate_stream(job_id: str):
                             "pptx": job.get("pptx"),
                             "docx": job.get("docx"),
                             "teaching_spec": job.get("teaching_spec"),
+                            "slide_plan": job.get("slide_plan"),
+                            "slide_drafts": job.get("slide_drafts"),
                             "block_summary": job.get("block_summary"),
                             "compound_factor": job.get("compound_factor", 0.0),
                             "mode_a": job.get("mode_a", {}),
@@ -185,6 +204,8 @@ async def _run_generate(job_id: str, intent: dict, file_ids: list[str]):
 
         effective_intent = spec.to_intent()
         _jobs[job_id]["teaching_spec"] = spec.to_dict()
+        slide_plan = build_slide_plan(spec, effective_intent)
+        _jobs[job_id]["slide_plan"] = [item.to_dict() for item in slide_plan]
 
         update(5, "Resolving reference structure...")
         mode_a_info = await asyncio.get_event_loop().run_in_executor(
@@ -205,9 +226,16 @@ async def _run_generate(job_id: str, intent: dict, file_ids: list[str]):
         )
 
         update(40, "Generating slide JSON...")
-        slides_json_raw = await asyncio.get_event_loop().run_in_executor(
-            None, generate_slides_json, effective_intent, rag_bundle["chunks"]
+        slides_json_raw, slide_drafts = await asyncio.get_event_loop().run_in_executor(
+            None,
+            generate_slide_drafts,
+            spec,
+            effective_intent,
+            rag_bundle["chunks"],
+            slide_plan,
+            generate_slides_json,
         )
+        _jobs[job_id]["slide_drafts"] = [item.to_dict() for item in slide_drafts]
 
         update(55, "Attaching source evidence...")
         slides_with_evidence = await asyncio.get_event_loop().run_in_executor(
@@ -276,7 +304,14 @@ def revise(req: ReviseRequest):
         intent=effective_intent,
         page_indexes=req.page_indexes,
     )
-    revised, block_summary = attach_blocks_to_slides_json(revised)
+    revision_patch = build_revision_patch(
+        original_slides_json=req.slides_json,
+        revised_slides_json=revised,
+        instruction=instruction,
+        page_indexes=req.page_indexes,
+    )
+    patched = apply_revision_patch(req.slides_json, revision_patch)
+    revised, block_summary = attach_blocks_to_slides_json(patched)
 
     job_id = str(uuid.uuid4())[:8]
     pptx_name = f"{job_id}_revised_courseware.pptx"
@@ -291,6 +326,7 @@ def revise(req: ReviseRequest):
         "pptx": pptx_name,
         "message": "Revision completed and exported",
         "teaching_spec": spec.to_dict(),
+        "revision_patch": revision_patch.to_dict(),
         "block_summary": block_summary,
     }
 

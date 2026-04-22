@@ -9,6 +9,8 @@
 - `upload.py`: upload, parse, and register files into the knowledge layer
 - `chat.py`: chat and streaming clarification path
 - `generate.py`: generation, async progress, and revise endpoints
+  - generate path returns `slide_plan` and `slide_drafts`
+  - revise path returns `revision_patch`
 - `download.py`: file download endpoints
 - `knowledge.py`: knowledge-base management endpoints
 - `retrieval.py`: retrieval inspection or helper endpoints
@@ -25,4 +27,3 @@
 - Validate request shape here, but keep generation and retrieval rules in `core/`.
 - If route behavior changes, sync the matching capability card.
 - Do not make `agent.py` assumptions part of the default user path unless runtime mode explicitly allows it.
-

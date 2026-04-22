@@ -127,12 +127,9 @@ def _local_chat_fallback(messages: list[dict]) -> str:
             break
 
     if not last_user:
-        return "Request received. Please provide topic, audience, duration, teaching goal, and key points."
+        return "已收到请求。请提供：课程主题、教学目标、学生类型、课时长短、重点难点。"
 
-    return (
-        f"Received: {last_user}\n"
-        "Please continue by providing teaching goal, audience, duration, and key points."
-    )
+    return f"已收到：{last_user}\n请继续补充：教学目标、学生类型、课时长短、重点难点。"
 
 
 def _chat(messages: list[dict], system: str = "", model: str = "deepseek-chat") -> str:
@@ -178,9 +175,9 @@ def _extract_json_obj(text: str) -> dict | None:
 
 
 CHAT_SYSTEM = """
-You are a teaching assistant helping users clarify lesson intent.
-Keep responses concise and practical.
-When enough info is provided, append:
+你是中文教学设计助手，专门帮助教师澄清备课意图并生成结构化信息。
+必须始终使用简体中文回复，回答简洁、实用、可执行。
+当信息充分时，在回复末尾附加：
 [INTENT_READY]
 {"topic":"...","teaching_goal":"...","audience":"...","difficulty_focus":"...","key_points":["..."],"duration":"...","style":"..."}
 """
@@ -305,6 +302,18 @@ def generate_slides_json(intent: dict, rag_chunks: list[str]) -> dict:
     style = str(intent.get("style") or "Structured and clear")
     preserve_structure = bool(intent.get("preserve_structure", False))
     reference_outline = [str(item) for item in (intent.get("reference_outline") or []) if str(item).strip()]
+    slide_plan = intent.get("slide_plan") or []
+    plan_lines: list[str] = []
+    if isinstance(slide_plan, list):
+        for item in slide_plan[:20]:
+            if not isinstance(item, dict):
+                continue
+            slide_id = str(item.get("slide_id", "")).strip()
+            title = str(item.get("title", "")).strip()
+            objective = str(item.get("objective", "")).strip()
+            slide_type = str(item.get("slide_type", "")).strip()
+            if title:
+                plan_lines.append(f"- {slide_id or 'auto'} | {slide_type or 'content'} | {title} | {objective}")
 
     rag_context = "\n".join(rag_chunks[:6])[:1200] if rag_chunks else ""
     knowledge_context = str(intent.get("knowledge_context") or "")
@@ -317,6 +326,12 @@ def generate_slides_json(intent: dict, rag_chunks: list[str]) -> dict:
             "\nReference structure (keep order whenever possible):\n"
             f"{ordered_outline}\n"
             "Requirement: keep chapter ordering from reference outline, then refresh per-page content."
+        )
+    plan_section = ""
+    if plan_lines:
+        plan_section = (
+            "\nSlide plan (must follow sequence and titles when possible):\n"
+            f"{chr(10).join(plan_lines)}\n"
         )
 
     prompt = f"""
@@ -333,6 +348,7 @@ Reference material:
 {rag_context or 'None'}
 {knowledge_context}
 {reference_section}
+{plan_section}
 
 Output schema:
 {{
@@ -349,6 +365,7 @@ Requirements:
 1) 8-12 pages.
 2) No empty key fields.
 3) Prioritize key_points coverage.
+4) If slide plan exists, keep the plan order and avoid skipping planned titles.
 """
 
     text = _chat([{"role": "user", "content": prompt}])

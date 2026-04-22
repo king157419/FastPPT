@@ -7,6 +7,7 @@
 ## Main modules
 
 - `teaching_spec.py`: compile raw intent into stable teaching fields
+- `slide_pipeline.py`: pipeline primitives for SlidePlan, SlideDraft, and RevisionPatch
 - `llm.py`: chat, generation, revise, and provider-facing prompt logic
 - `rag.py`: hybrid retrieval path and fallbacks
 - `source_index.py`: source metadata registration and lookup
@@ -32,4 +33,3 @@
   - normalize blocks
   - export
 - Prefer strengthening current modules over adding parallel abstractions.
-

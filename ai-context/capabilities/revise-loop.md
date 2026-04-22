@@ -19,17 +19,16 @@ The editing path that modifies existing `slides_json` based on user instructions
 ## Current status
 
 - `partial`
-- Entry path exists
-- Quality of local edits is not yet as strong as the intended product story
+- Entry path exists and now emits a `RevisionPatch`
+- Quality of local edits is still below target for strict page-level control
 
 ## Inputs / outputs
 
 - Input: existing `slides_json`, revise instruction, optional page indexes
-- Output: revised `slides_json`
+- Output: `RevisionPatch` plus patched `slides_json`
 
 ## Known gaps
 
 - Some fallback revise behavior is still simplistic.
 - Mode A style structure-preserving updates are not fully realized.
-- Page-level and block-level regenerate endpoints can be separated further.
-
+- Block-level patch granularity is still limited; current patch op is mostly `replace_slide`.

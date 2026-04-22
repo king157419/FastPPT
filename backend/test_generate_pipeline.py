@@ -55,6 +55,10 @@ def test_generate_returns_pptx_and_docx(monkeypatch, tmp_path):
     assert (tmp_path / result["pptx"]).exists()
     assert (tmp_path / result["docx"]).exists()
     assert result["slides_json"]["pages"]
+    assert isinstance(result["slide_plan"], list)
+    assert result["slide_plan"][0]["slide_type"] == "cover"
+    assert isinstance(result["slide_drafts"], list)
+    assert result["slides_json"]["meta"]["pipeline"]["stage"] == "SlideDraft"
 
 
 def test_revise_returns_updated_slides_and_pptx(monkeypatch, tmp_path):
@@ -100,3 +104,5 @@ def test_revise_returns_updated_slides_and_pptx(monkeypatch, tmp_path):
     assert (tmp_path / result["pptx"]).exists()
     assert result["slides_json"]["pages"][0]["title"] == "修改后页面"
     assert result["block_summary"]["total_pages"] == 1
+    assert result["revision_patch"]["operations"]
+    assert result["slides_json"]["meta"]["pipeline"]["stage"] == "RevisionPatch"
