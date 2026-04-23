@@ -1,0 +1,301 @@
+repo: D:/desk/外包/FastPPT
+max_depth: 3
+
+[D] ai-context
+  [D] ai-context/capabilities
+    [F] ai-context/capabilities/chat-clarification.md
+    [F] ai-context/capabilities/course-memory.md
+    [F] ai-context/capabilities/export-docx.md
+    [F] ai-context/capabilities/export-pptx.md
+    [F] ai-context/capabilities/generate-pipeline.md
+    [F] ai-context/capabilities/preview-renderer.md
+    [F] ai-context/capabilities/problem-needs.md
+    [F] ai-context/capabilities/product-positioning.md
+    [F] ai-context/capabilities/rag-evidence.md
+    [F] ai-context/capabilities/README.md
+    [F] ai-context/capabilities/revise-loop.md
+    [F] ai-context/capabilities/slide-blocks.md
+    [F] ai-context/capabilities/teacher-feedback.md
+    [F] ai-context/capabilities/teaching-spec.md
+  [D] ai-context/decisions
+    [F] ai-context/decisions/documentation-layer.md
+  [D] ai-context/flows
+    [F] ai-context/flows/generate-courseware.md
+    [F] ai-context/flows/revise-courseware.md
+  [F] ai-context/CAPABILITY_INDEX.yaml
+  [F] ai-context/CAPABILITY_INDEX_CURRENT.yaml
+  [F] ai-context/CAPABILITY_INDEX_TARGET.yaml
+  [F] ai-context/CHECK_AI_CONTEXT_REPORT.txt
+  [F] ai-context/CURRENT_VS_TARGET_DIFF.md
+  [F] ai-context/GLOSSARY.md
+  [F] ai-context/PROJECT.md
+  [F] ai-context/PROJECT_CURRENT.md
+  [F] ai-context/PROJECT_TARGET.md
+  [F] ai-context/REPO_MAP.md
+  [F] ai-context/REPO_MAP_CURRENT_GROUNDED.md
+  [F] ai-context/REPO_SNAPSHOT.txt
+[D] backend
+  [D] backend/api
+    [F] backend/api/__init__.py
+    [F] backend/api/agent.py
+    [F] backend/api/asr.py
+    [F] backend/api/chat.py
+    [F] backend/api/chat.py.backup
+    [F] backend/api/download.py
+    [F] backend/api/generate.py
+    [F] backend/api/knowledge.py
+    [F] backend/api/README.md
+    [F] backend/api/README_AGENT_INTEGRATION.md
+    [F] backend/api/retrieval.py
+    [F] backend/api/upload.py
+  [D] backend/backend
+    [F] backend/backend/.env
+  [D] backend/core
+    [F] backend/core/__init__.py
+    [F] backend/core/compound_knowledge.py
+    [F] backend/core/doc_gen.py
+    [F] backend/core/intent.py
+    [F] backend/core/llm.py
+    [F] backend/core/monitoring.py
+    [F] backend/core/parser.py
+    [F] backend/core/ppt_gen.py
+    [F] backend/core/PPT_GEN_REFACTOR.md
+    [F] backend/core/rag.py
+    [F] backend/core/README.md
+    [F] backend/core/slide_blocks.py
+    [F] backend/core/slide_pipeline.py
+    [F] backend/core/source_index.py
+    [F] backend/core/teaching_spec.py
+    [F] backend/core/video_parser.py
+  [D] backend/docs
+    [F] backend/docs/COMPOUND_RAG.md
+  [D] backend/integrations
+    [F] backend/integrations/__init__.py
+    [F] backend/integrations/langchain_agent.py
+    [F] backend/integrations/ragflow_client.py
+    [F] backend/integrations/README_LANGCHAIN_AGENT.md
+    [F] backend/integrations/test_langchain_agent.py
+  [D] backend/services
+    [F] backend/services/__init__.py
+    [F] backend/services/chat_service.py
+    [F] backend/services/generate_service.py
+    [F] backend/services/upload_service.py
+  [F] backend/.env
+  [F] backend/.env.demo
+  [F] backend/.env.example
+  [F] backend/backend.log
+  [F] backend/conftest.py
+  [F] backend/main.py
+  [F] backend/models.py
+  [F] backend/RAG_REFACTOR.md
+  [F] backend/requirements.txt
+  [F] backend/server.log
+  [F] backend/server.pid
+  [F] backend/start_backend.sh
+  [F] backend/test_agent_chat.py
+  [F] backend/test_agent_direct.py
+  [F] backend/test_agent_init.py
+  [F] backend/test_agent_router_gate.py
+  [F] backend/test_agent_streaming.py
+  [F] backend/test_api_debug.py
+  [F] backend/test_chat_api.py
+  [F] backend/test_chat_fallback.py
+  [F] backend/test_claude_api.py
+  [F] backend/test_demo_chain_smoke.py
+  [F] backend/test_frontend_streaming.py
+  [F] backend/test_full_chain_e2e.py
+  [F] backend/test_generate_pipeline.py
+  [F] backend/test_health_runtime_modes.py
+  [F] backend/test_llm_module.py
+  [F] backend/test_mode_a_evidence.py
+  [F] backend/test_monitoring.py
+  [F] backend/test_noagent_streaming.py
+  [F] backend/test_ppt_gen.py
+  [F] backend/test_rag_refactor.py
+  [F] backend/test_slide_pipeline.py
+  [F] backend/test_teaching_request.py
+[D] contest_materials
+  [F] contest_materials/01_项目概要介绍.md
+  [F] contest_materials/02_项目简介PPT.pptx
+  [F] contest_materials/03_项目详细方案.md
+  [F] contest_materials/build_contest_intro_ppt.py
+[D] docker
+  [F] docker/.env
+  [F] docker/.env.demo
+  [F] docker/.env.example
+  [F] docker/docker-compose.yml
+  [F] docker/Dockerfile.backend
+  [F] docker/Dockerfile.pptxgenjs
+  [F] docker/init-db.sql
+  [F] docker/pptxgenjs-server.js
+  [F] docker/README.md
+  [F] docker/start.bat
+  [F] docker/start.sh
+[D] docs
+  [D] docs/api
+    [F] docs/api/README.md
+  [D] docs/architecture
+    [F] docs/architecture/README.md
+  [D] docs/archive
+    [D] docs/archive/strategy-history
+      [F] docs/archive/strategy-history/00-START-HERE.md
+      [F] docs/archive/strategy-history/10-Step1-Problem-And-Needs.md
+      [F] docs/archive/strategy-history/11-Teacher-Interview-Form.md
+      [F] docs/archive/strategy-history/12-Teacher-Feedback-2026-04-22.md
+      [F] docs/archive/strategy-history/20-Step2-Product-Positioning.md
+      [F] docs/archive/strategy-history/30-Step3-Feature-Decomposition-And-Implementation.md
+      [F] docs/archive/strategy-history/README.md
+    [F] docs/archive/README.md
+  [D] docs/engineering
+    [F] docs/engineering/feature-decomposition-and-implementation.md
+    [F] docs/engineering/README.md
+  [D] docs/evaluation
+    [F] docs/evaluation/README.md
+  [D] docs/product
+    [F] docs/product/problem-needs.md
+    [F] docs/product/product-positioning.md
+    [F] docs/product/README.md
+    [F] docs/product/teacher-feedback.md
+    [F] docs/product/teacher-interview-form.md
+  [F] docs/API.md
+  [F] docs/DEPLOYMENT.md
+  [F] docs/DEPLOYMENT_COMPLETE.md
+  [F] docs/DEVELOPMENT.md
+  [F] docs/IMPROVEMENTS.md
+  [F] docs/IR_SCHEMA.md
+  [F] docs/README.md
+  [F] docs/REVISION_FLOW.md
+  [F] docs/TESTING.md
+[D] frontend
+  [D] frontend/dist
+    [D] frontend/dist/assets
+      [F] frontend/dist/assets/__vite-browser-external-BIHI7g3E.js
+      [F] frontend/dist/assets/index-D1VFcSDk.js
+      [F] frontend/dist/assets/index-DuTvPVCs.css
+      [F] frontend/dist/assets/KaTeX_AMS-Regular-BQhdFMY1.woff2
+      [F] frontend/dist/assets/KaTeX_AMS-Regular-DMm9YOAa.woff
+      [F] frontend/dist/assets/KaTeX_AMS-Regular-DRggAlZN.ttf
+      [F] frontend/dist/assets/KaTeX_Caligraphic-Bold-ATXxdsX0.ttf
+      [F] frontend/dist/assets/KaTeX_Caligraphic-Bold-BEiXGLvX.woff
+      [F] frontend/dist/assets/KaTeX_Caligraphic-Bold-Dq_IR9rO.woff2
+      [F] frontend/dist/assets/KaTeX_Caligraphic-Regular-CTRA-rTL.woff
+      [F] frontend/dist/assets/KaTeX_Caligraphic-Regular-Di6jR-x-.woff2
+      [F] frontend/dist/assets/KaTeX_Caligraphic-Regular-wX97UBjC.ttf
+      [F] frontend/dist/assets/KaTeX_Fraktur-Bold-BdnERNNW.ttf
+      [F] frontend/dist/assets/KaTeX_Fraktur-Bold-BsDP51OF.woff
+      [F] frontend/dist/assets/KaTeX_Fraktur-Bold-CL6g_b3V.woff2
+      [F] frontend/dist/assets/KaTeX_Fraktur-Regular-CB_wures.ttf
+      [F] frontend/dist/assets/KaTeX_Fraktur-Regular-CTYiF6lA.woff2
+      [F] frontend/dist/assets/KaTeX_Fraktur-Regular-Dxdc4cR9.woff
+      [F] frontend/dist/assets/KaTeX_Main-Bold-Cx986IdX.woff2
+      [F] frontend/dist/assets/KaTeX_Main-Bold-Jm3AIy58.woff
+      [F] frontend/dist/assets/KaTeX_Main-Bold-waoOVXN0.ttf
+      [F] frontend/dist/assets/KaTeX_Main-BoldItalic-DxDJ3AOS.woff2
+      [F] frontend/dist/assets/KaTeX_Main-BoldItalic-DzxPMmG6.ttf
+      [F] frontend/dist/assets/KaTeX_Main-BoldItalic-SpSLRI95.woff
+      [F] frontend/dist/assets/KaTeX_Main-Italic-3WenGoN9.ttf
+      [F] frontend/dist/assets/KaTeX_Main-Italic-BMLOBm91.woff
+      [F] frontend/dist/assets/KaTeX_Main-Italic-NWA7e6Wa.woff2
+      [F] frontend/dist/assets/KaTeX_Main-Regular-B22Nviop.woff2
+      [F] frontend/dist/assets/KaTeX_Main-Regular-Dr94JaBh.woff
+      [F] frontend/dist/assets/KaTeX_Main-Regular-ypZvNtVU.ttf
+      [F] frontend/dist/assets/KaTeX_Math-BoldItalic-B3XSjfu4.ttf
+      [F] frontend/dist/assets/KaTeX_Math-BoldItalic-CZnvNsCZ.woff2
+      [F] frontend/dist/assets/KaTeX_Math-BoldItalic-iY-2wyZ7.woff
+      [F] frontend/dist/assets/KaTeX_Math-Italic-DA0__PXp.woff
+      [F] frontend/dist/assets/KaTeX_Math-Italic-flOr_0UB.ttf
+      [F] frontend/dist/assets/KaTeX_Math-Italic-t53AETM-.woff2
+      [F] frontend/dist/assets/KaTeX_SansSerif-Bold-CFMepnvq.ttf
+      [F] frontend/dist/assets/KaTeX_SansSerif-Bold-D1sUS0GD.woff2
+      [F] frontend/dist/assets/KaTeX_SansSerif-Bold-DbIhKOiC.woff
+      [F] frontend/dist/assets/KaTeX_SansSerif-Italic-C3H0VqGB.woff2
+      [F] frontend/dist/assets/KaTeX_SansSerif-Italic-DN2j7dab.woff
+      [F] frontend/dist/assets/KaTeX_SansSerif-Italic-YYjJ1zSn.ttf
+      [F] frontend/dist/assets/KaTeX_SansSerif-Regular-BNo7hRIc.ttf
+      [F] frontend/dist/assets/KaTeX_SansSerif-Regular-CS6fqUqJ.woff
+      [F] frontend/dist/assets/KaTeX_SansSerif-Regular-DDBCnlJ7.woff2
+      [F] frontend/dist/assets/KaTeX_Script-Regular-C5JkGWo-.ttf
+      [F] frontend/dist/assets/KaTeX_Script-Regular-D3wIWfF6.woff2
+      [F] frontend/dist/assets/KaTeX_Script-Regular-D5yQViql.woff
+      [F] frontend/dist/assets/KaTeX_Size1-Regular-C195tn64.woff
+      [F] frontend/dist/assets/KaTeX_Size1-Regular-Dbsnue_I.ttf
+      [F] frontend/dist/assets/KaTeX_Size1-Regular-mCD8mA8B.woff2
+      [F] frontend/dist/assets/KaTeX_Size2-Regular-B7gKUWhC.ttf
+      [F] frontend/dist/assets/KaTeX_Size2-Regular-Dy4dx90m.woff2
+      [F] frontend/dist/assets/KaTeX_Size2-Regular-oD1tc_U0.woff
+      [F] frontend/dist/assets/KaTeX_Size3-Regular-CTq5MqoE.woff
+      [F] frontend/dist/assets/KaTeX_Size3-Regular-DgpXs0kz.ttf
+      [F] frontend/dist/assets/KaTeX_Size4-Regular-BF-4gkZK.woff
+      [F] frontend/dist/assets/KaTeX_Size4-Regular-Dl5lxZxV.woff2
+      [F] frontend/dist/assets/KaTeX_Size4-Regular-DWFBv043.ttf
+      [F] frontend/dist/assets/KaTeX_Typewriter-Regular-C0xS9mPB.woff
+      [F] frontend/dist/assets/KaTeX_Typewriter-Regular-CO6r4hn1.woff2
+      [F] frontend/dist/assets/KaTeX_Typewriter-Regular-D3Ib7_Hf.ttf
+    [D] frontend/dist/templates
+      [F] frontend/dist/templates/bar_chart.html
+      [F] frontend/dist/templates/card_flip.html
+      [F] frontend/dist/templates/flowchart.html
+      [F] frontend/dist/templates/quiz.html
+      [F] frontend/dist/templates/timeline.html
+    [F] frontend/dist/index.html
+  [D] frontend/public
+    [D] frontend/public/templates
+      [F] frontend/public/templates/bar_chart.html
+      [F] frontend/public/templates/card_flip.html
+      [F] frontend/public/templates/flowchart.html
+      [F] frontend/public/templates/quiz.html
+      [F] frontend/public/templates/timeline.html
+  [D] frontend/src
+    [D] frontend/src/api
+      [F] frontend/src/api/index.js
+      [F] frontend/src/api/retrieval.js
+    [D] frontend/src/components
+      [F] frontend/src/components/ChatPanel.vue
+      [F] frontend/src/components/DocumentPanel.vue
+      [F] frontend/src/components/FileUpload.vue
+      [F] frontend/src/components/GenerateBtn.vue
+      [F] frontend/src/components/PreviewPanel.vue
+      [F] frontend/src/components/README.md
+      [F] frontend/src/components/SlideRenderer.vue
+    [F] frontend/src/App.vue
+    [F] frontend/src/main.js
+  [F] frontend/index.html
+  [F] frontend/package-lock.json
+  [F] frontend/package.json
+  [F] frontend/vite.config.js
+[D] scripts
+  [F] scripts/check_ai_context.py
+  [F] scripts/gen_repo_snapshot.py
+[D] services
+  [D] services/pptxgenjs
+    [D] services/pptxgenjs/generators
+      [F] services/pptxgenjs/generators/teaching.js
+      [F] services/pptxgenjs/generators/templates.js
+    [F] services/pptxgenjs/.dockerignore
+    [F] services/pptxgenjs/.gitignore
+    [F] services/pptxgenjs/Dockerfile
+    [F] services/pptxgenjs/package-lock.json
+    [F] services/pptxgenjs/package.json
+    [F] services/pptxgenjs/README.md
+    [F] services/pptxgenjs/server.js
+    [F] services/pptxgenjs/test-output.pptx
+    [F] services/pptxgenjs/test-request.json
+[F] .dockerignore
+[F] .env
+[F] .gitignore
+[F] AGENT_INTEGRATION_SUMMARY.md
+[F] AGENTS.md
+[F] COMPOUND_KNOWLEDGE_INTEGRATION.md
+[F] frontend.log
+[F] KNOWLEDGE_QUICKSTART.md
+[F] OPENMAIC_NOTES.md
+[F] prd.json
+[F] progress.txt
+[F] pytest.ini
+[F] QUICKSTART.md
+[F] README.md
+[F] server.log
+[F] server.pid
+[F] start.bat
+[F] test_agent_integration.py
+[F] test_compound_knowledge.py

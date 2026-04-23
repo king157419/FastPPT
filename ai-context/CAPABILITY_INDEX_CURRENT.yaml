@@ -9,88 +9,116 @@ capabilities:
   - id: upload-parse
     title: 上传与文本解析
     status: active
+    grounding: current
     summary: 上传 PDF/Word/PPT/TXT 并提取文本块，作为检索输入。
-    code_paths:
+    verified_paths:
       - backend/api/upload.py
+      - backend/services/upload_service.py
       - backend/core/parser.py
       - backend/core/source_index.py
-    cards:
-      - ai-context/capabilities/problem-needs.md
     read_when:
       - 改上传流程
       - 排查解析失败
+    do_not_assume:
+      - 不要假设已有页级版式继承能力
+      - 不要假设所有文件类型都能高保真解析
+    cards:
+      - ai-context/capabilities/problem-needs.md
 
   - id: chat-intake
     title: 对话澄清与意图采集
     status: active
+    grounding: current
     summary: 通过聊天持续补全生成前必须字段并输出 TeachingSpec 输入。
-    code_paths:
+    verified_paths:
       - backend/api/chat.py
+      - backend/services/chat_service.py
       - backend/core/teaching_spec.py
+      - backend/models.py
       - frontend/src/components/ChatPanel.vue
-    cards:
-      - ai-context/capabilities/chat-clarification.md
-      - ai-context/capabilities/teaching-spec.md
     read_when:
       - 改聊天流程
       - 改 preflight 字段
+    do_not_assume:
+      - 不要假设 agent 路径是默认启用
+      - 不要假设聊天已具备完整课程长期记忆
+    cards:
+      - ai-context/capabilities/chat-clarification.md
+      - ai-context/capabilities/teaching-spec.md
 
   - id: generation-pipeline
     title: TeachingSpec -> SlidePlan -> SlideDraft
     status: active
+    grounding: current
     summary: 基于 TeachingSpec 构建 SlidePlan，再生成 SlideDraft 与 slides_json。
-    code_paths:
+    verified_paths:
       - backend/core/slide_pipeline.py
       - backend/api/generate.py
+      - backend/services/generate_service.py
+      - backend/models.py
       - backend/core/llm.py
-    cards:
-      - ai-context/capabilities/generate-pipeline.md
-      - ai-context/capabilities/slide-blocks.md
     read_when:
       - 改生成主链路
       - 改页面结构
+    do_not_assume:
+      - 不要假设已完成真正逐页并行生成
+      - 不要假设 block-first 导出已完全打通
+    cards:
+      - ai-context/capabilities/generate-pipeline.md
+      - ai-context/capabilities/slide-blocks.md
 
   - id: retrieval-evidence
     title: 检索与来源证据
     status: partial
+    grounding: current
     summary: 结合检索结果给页面附证据，支持可追溯输出。
-    code_paths:
+    verified_paths:
       - backend/core/rag.py
       - backend/core/source_index.py
       - backend/api/generate.py
-    cards:
-      - ai-context/capabilities/rag-evidence.md
     read_when:
       - 改检索质量
       - 改 evidence 结构
+    do_not_assume:
+      - 不要假设 evidence 是块级强约束
+      - 不要假设检索已是纯向量或重排全覆盖
+    cards:
+      - ai-context/capabilities/rag-evidence.md
 
   - id: revise-patch
     title: RevisionPatch 修订链路
     status: active
+    grounding: current
     summary: revise 先产出 patch，再应用 patch，降低整套重生成依赖。
-    code_paths:
+    verified_paths:
       - backend/core/slide_pipeline.py
       - backend/api/generate.py
       - backend/core/llm.py
-    cards:
-      - ai-context/capabilities/revise-loop.md
     read_when:
       - 改页级修改
       - 排查 revise 质量
+    do_not_assume:
+      - 不要假设已经支持块级 patch
+      - 不要假设复杂多操作序列全部被性质测试覆盖
+    cards:
+      - ai-context/capabilities/revise-loop.md
 
   - id: export-render
     title: 导出与预览
     status: active
+    grounding: current
     summary: 导出 PPTX/DOCX 并在前端预览。
-    code_paths:
+    verified_paths:
       - backend/core/ppt_gen.py
       - backend/core/doc_gen.py
       - frontend/src/components/PreviewPanel.vue
+    read_when:
+      - 改导出质量
+      - 改预览交互
+    do_not_assume:
+      - 不要假设导出层已经迁移到 Node/PptxGenJS 主链路
+      - 不要假设预览层与导出层完全同构
     cards:
       - ai-context/capabilities/export-pptx.md
       - ai-context/capabilities/export-docx.md
       - ai-context/capabilities/preview-renderer.md
-    read_when:
-      - 改导出质量
-      - 改预览交互
-

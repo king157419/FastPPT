@@ -8,59 +8,106 @@ read_order:
 capabilities:
   - id: teaching-spec
     title: TeachingSpec 结构化教学规格
-    status: in_progress
+    status: planned
+    grounding: target
     summary: 将教师需求编译为统一对象，供检索、生成、revise 共用。
-    target_paths:
+    verified_paths:
       - backend/core/teaching_spec.py
       - backend/core/slide_pipeline.py
+    read_when:
+      - 规划输入结构升级
+      - 统一聊天与生成参数
+    do_not_assume:
+      - 不要假设当前已经具备完整教学约束图谱
+      - 不要假设所有字段都已前端可编辑
 
   - id: evidence-binding
     title: 页面证据绑定
     status: planned
+    grounding: target
     summary: 让 slide 与 source chunks 形成稳定关联，增强可追溯性与 revise 质量。
-    target_paths:
+    verified_paths:
       - backend/core/source_index.py
       - backend/api/generate.py
+    read_when:
+      - 规划证据强约束
+      - 设计块级追溯
+    do_not_assume:
+      - 不要假设当前 evidence 已达到块级引用
+      - 不要假设评分与重排策略已稳定
 
   - id: lesson-planner
     title: SlidePlan -> SlideDraft 两阶段生成
-    status: in_progress
+    status: partial
+    grounding: target
     summary: 先规划课程页面，再逐页写内容，提升结构和密度控制。
-    target_paths:
+    verified_paths:
       - backend/core/slide_pipeline.py
       - backend/core/llm.py
       - backend/api/generate.py
+    read_when:
+      - 规划逐页生成/逐页重试
+      - 规划异步任务分解
+    do_not_assume:
+      - 不要假设当前已经是真正逐页 worker 生成
+      - 不要假设计划约束覆盖所有模型输出偏差
 
   - id: slide-blocks
     title: Slide Blocks 中间层
     status: partial
+    grounding: target
     summary: 统一前端、预览、导出和 revise 的内容表示。
-    target_paths:
+    verified_paths:
       - backend/core/slide_blocks.py
       - backend/core/ppt_gen.py
       - frontend/src/components/SlideRenderer.vue
+    read_when:
+      - 规划 block-first 全链路
+      - 新增块类型
+    do_not_assume:
+      - 不要假设导出层已完全按 block 渲染
+      - 不要假设前端已移除 page.type 兼容层
 
   - id: revise-patch
     title: revise patch 引擎
-    status: in_progress
+    status: partial
+    grounding: target
     summary: 将页级修改从“重新生成”升级为“局部 patch + 保留约束”。
-    target_paths:
+    verified_paths:
       - backend/core/slide_pipeline.py
       - backend/api/generate.py
+    read_when:
+      - 规划块级 patch
+      - 规划并发 patch 冲突策略
+    do_not_assume:
+      - 不要假设当前 patch 已覆盖所有复杂编辑序列
+      - 不要假设 patch 可跨任意版本 deck 稳定回放
 
   - id: mode-a-reuse
     title: 旧 PPT / 参考大纲复用
     status: partial
+    grounding: target
     summary: 复用已有结构、案例和风格，是 FastPPT 差异化核心能力。
-    target_paths:
+    verified_paths:
       - backend/core/source_index.py
       - backend/api/generate.py
+    read_when:
+      - 规划结构继承策略
+      - 规划模板复用与风格对齐
+    do_not_assume:
+      - 不要假设当前 mode-a 已达到“旧课件稳定保形更新”
+      - 不要假设异步与同步行为天然一致
 
   - id: course-memory
     title: 课程长期记忆
     status: planned
+    grounding: target
     summary: 沉淀资料、生成结果和 revise 历史，提升连续备课一致性。
-    target_paths:
+    verified_paths:
       - backend/core/compound_knowledge.py
       - docs/product/
-
+    read_when:
+      - 规划跨课时记忆
+      - 规划审计与清理策略
+    do_not_assume:
+      - 不要假设当前记忆层是可审计、可回滚、可分课程隔离的完整实现
