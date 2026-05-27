@@ -15,6 +15,7 @@ from core.doc_gen import generate_docx
 from core.llm import generate_slides_json, revise_slides_json
 from core.ppt_gen import generate_pptx_from_slides_json
 from core.slide_blocks import attach_blocks_to_slides_json
+from core.two_stage_gen import generate_slides_json_two_stage, two_stage_enabled
 from core.slide_pipeline import (
     apply_revision_patch,
     build_revision_patch,
@@ -26,6 +27,13 @@ from core.teaching_spec import compile_teaching_spec
 
 OUTPUT_DIR = "outputs"
 _jobs: dict[str, dict[str, Any]] = {}
+
+
+def _slide_generator():
+    """Pick the slide content generator. Two-stage (outline -> per-page) by
+    default; falls back to legacy single-shot when TWO_STAGE_GEN is disabled.
+    The two-stage generator also self-degrades to single-shot on planning errors."""
+    return generate_slides_json_two_stage if two_stage_enabled() else generate_slides_json
 
 
 class ServiceValidationError(ValueError):
@@ -83,7 +91,7 @@ def generate_courseware(intent: dict, file_ids: list[str]) -> dict[str, Any]:
         intent=effective_intent,
         rag_chunks=rag_chunks,
         slide_plan=slide_plan,
-        generator=generate_slides_json,
+        generator=_slide_generator(),
     )
 
     slides_with_evidence = _attach_page_evidence(
@@ -165,7 +173,7 @@ async def run_generate_job(job_id: str, intent: dict, file_ids: list[str]) -> No
             intent=effective_intent,
             rag_chunks=rag_bundle["chunks"],
             slide_plan=slide_plan,
-            generator=generate_slides_json,
+            generator=_slide_generator(),
         )
         slides_json_raw, slide_drafts = await loop.run_in_executor(None, draft_fn)
         _jobs[job_id]["slide_drafts"] = [item.to_dict() for item in slide_drafts]
