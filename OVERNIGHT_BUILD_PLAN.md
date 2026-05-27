@@ -50,3 +50,31 @@
   （NDP页 ICMPv6类型133-137 / RS,RA,NS,NA;过渡页 IPv6流量>40%(2024)），每页带 tip+notes。
 - 修复 2 个 bug：占位符 `<沿用上面的标题>`、summary `...`（改为标题以种子为准）。
 - 真实全链路 e2e 通过：pptx/docx/blocks 正常，类型多样化（自动产出 two_column）。
+
+---
+
+## 醒来速览（2026-05-28 通宵构建结果）
+
+**全部 5 个 PRD 里程碑完成并通过验收，已在分支 `overnight/prd-build` 提交。**
+
+| 里程碑 | 成果 |
+|---|---|
+| M0/M2 两阶段生成 | `core/two_stage_gen.py`：大纲→逐页并发；按学科产出公式/代码/两栏/图表 |
+| M1 渲染器重做 | `core/pptx_renderer.py`：按 pages[] 忠实渲染，公式→matplotlib图片、代码深色面板、双栏、演讲者备注、来源页脚；修了 split-brain |
+| M3 验证&修补 | `core/verify_repair.py`：薄页重生、超长压缩（低风险） |
+| M5 富教案+速度 | `core/doc_gen.py` 重写为中文教案（吃逐页内容）；新渲染器纯本地无 502 空等；LLM 加重试 |
+| M4 结构化录入 | `frontend/.../RequirementForm.vue`：表单优先入口 |
+
+**质量证据**：eval 三主题真实生成 PASS（数学出 2 公式页/4 图片、CS 出 formula+code）；全量 35 测试通过；Opus architect 评审通过（修复了一个测试 stub 回归）。
+
+**特性开关**（均默认开，可关）：`TWO_STAGE_GEN` / `NEW_RENDERER` / `VERIFY_REPAIR`。
+
+**怎么跑**：后端 `cd backend && python -m uvicorn main:app --port 8000`；前端 `cd frontend && npm run dev`（http://localhost:5173）。`.env` 里 DeepSeek key 已更新为可用。
+> 提示：演示前可把 `.env` 的 `PPTXGENJS_SERVICE_URL` 留空（新渲染器纯本地，不需要它）。
+
+**已知/待办**：
+1. `test_chat_fallback.py` 3 个测试 pre-existing 失败（引用已删除的 `_plain_chat_response`，源自 commit 2bfe0d3 的 chat 重构）——非本次引入，未修（超 PRD 范围）。
+2. M6 SourceAnchor（完整页/段定位锚点）暂缓——基础可追溯已具备（页脚来源+evidence绑定）。
+3. architect 提的非阻塞项：`slide_pipeline` 里 `plan.slide_type` 镜像字段在富类型升级后会过时（无功能影响）；`ppt_gen.py` 有一条 pre-existing 死代码链（旧 PptxGenJS slide_contents 路径）可清理。
+4. 我没合并到 master，也没 push——分支 `overnight/prd-build` 等你 review。
+5. 这是无人监督的自动构建，建议你抽查导出的 pptx/docx 实际观感（本机无 LibreOffice，我只能做结构断言+内容核查，没做像素级视觉验证）。

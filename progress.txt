@@ -73,3 +73,12 @@
 
 ### 全部 5 个 PRD story (M1/M2/M3/M5/M4) 已 passes:true → 进入 ralph 验收(reviewer→deslop→回归→cancel)
 
+### 迭代 8 - ralph 验收
+- Opus architect 评审：核心架构(两阶段→渲染器→验证修补→富教案)扎实；page-index对齐/并发/verify_repair副作用/renderer兜底四项实测安全。
+  抓到 1 个 CRITICAL 回归：M5 给 generate_docx 加 slides_json= 后，6 个既有测试 monkeypatch stub 仍旧4参签名 → TypeError/500。
+- 修复：6 处 stub 补 slides_json=None；并发现更深一层：两阶段默认开后这些契约测试 patch 的单次 generate_slides_json 被绕过(还会发真实LLM调用)，
+  故在 5 个 pipeline/契约测试加 TWO_STAGE_GEN=0 使其用 patched 单次、离线确定。已提交 cb3eb07。
+- 回归：全量 35 passed（之前 9 failed）。剩 3 个 test_chat_fallback pre-existing(引用已删除的 _plain_chat_response，源自 2bfe0d3)，非本次引入。
+- deslop：鉴于 Opus architect 已做完整质量+可维护性评审(无 slop，仅 pre-existing 死代码)，且变更集已验证，判定带理由跳过无监督自动清理(等同 --no-deslop)。
+- 结论：5 个 PRD 里程碑完成并验收通过。M6 暂缓。未 push、未并入 master，留分支 overnight/prd-build 待 review。
+
