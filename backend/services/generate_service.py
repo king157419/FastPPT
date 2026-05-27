@@ -16,6 +16,7 @@ from core.llm import generate_slides_json, revise_slides_json
 from core.ppt_gen import generate_pptx_from_slides_json
 from core.slide_blocks import attach_blocks_to_slides_json
 from core.two_stage_gen import generate_slides_json_two_stage, two_stage_enabled
+from core.verify_repair import verify_and_repair, verify_repair_enabled
 from core.slide_pipeline import (
     apply_revision_patch,
     build_revision_patch,
@@ -94,6 +95,9 @@ def generate_courseware(intent: dict, file_ids: list[str]) -> dict[str, Any]:
         generator=_slide_generator(),
     )
 
+    if verify_repair_enabled():
+        slides_json_raw, _vr_report = verify_and_repair(slides_json_raw, effective_intent, rag_chunks)
+
     slides_with_evidence = _attach_page_evidence(
         slides_json_raw,
         effective_intent,
@@ -117,6 +121,7 @@ def generate_courseware(intent: dict, file_ids: list[str]) -> dict[str, Any]:
         rag_chunks,
         docx_path,
         evidence_entries=rag_bundle["general_evidence"],
+        slides_json=slides_json,
     )
 
     return {
@@ -178,6 +183,11 @@ async def run_generate_job(job_id: str, intent: dict, file_ids: list[str]) -> No
         slides_json_raw, slide_drafts = await loop.run_in_executor(None, draft_fn)
         _jobs[job_id]["slide_drafts"] = [item.to_dict() for item in slide_drafts]
 
+        if verify_repair_enabled():
+            update(60, "Verifying and repairing pages...")
+            vr_fn = partial(verify_and_repair, slides_json_raw, effective_intent, rag_bundle["chunks"])
+            slides_json_raw, _vr_report = await loop.run_in_executor(None, vr_fn)
+
         update(55, "Attaching source evidence...")
         attach_fn = partial(
             _attach_page_evidence,
@@ -208,6 +218,7 @@ async def run_generate_job(job_id: str, intent: dict, file_ids: list[str]) -> No
             rag_bundle["chunks"],
             docx_path,
             evidence_entries=rag_bundle["general_evidence"],
+            slides_json=slides_json,
         )
         await loop.run_in_executor(None, docx_fn)
 

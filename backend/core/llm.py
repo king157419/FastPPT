@@ -23,7 +23,7 @@ def _get_anthropic_key() -> str:
 def _deepseek_chat(messages: list[dict], system: str = "", model: str = "deepseek-chat") -> str:
     from openai import OpenAI
 
-    client = OpenAI(api_key=_get_deepseek_key(), base_url="https://api.deepseek.com")
+    client = OpenAI(api_key=_get_deepseek_key(), base_url="https://api.deepseek.com", timeout=90.0, max_retries=2)
     full_messages: list[dict] = []
     if system:
         full_messages.append({"role": "system", "content": system})
@@ -35,7 +35,7 @@ def _deepseek_chat(messages: list[dict], system: str = "", model: str = "deepsee
 def _deepseek_chat_stream(messages: list[dict], system: str = "", model: str = "deepseek-chat"):
     from openai import OpenAI
 
-    client = OpenAI(api_key=_get_deepseek_key(), base_url="https://api.deepseek.com")
+    client = OpenAI(api_key=_get_deepseek_key(), base_url="https://api.deepseek.com", timeout=90.0, max_retries=2)
     full_messages: list[dict] = []
     if system:
         full_messages.append({"role": "system", "content": system})

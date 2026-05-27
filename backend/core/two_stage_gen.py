@@ -37,7 +37,7 @@ DEFAULT_THEME = {"primary": "#1e3a5f", "accent": "#60a5fa", "text": "#f0f7ff"}
 MAX_CONTENT_PAGES = 12
 MIN_CONTENT_PAGES = 3
 MAX_WORKERS = 6
-CONTENT_PAGE_TYPES = {"content", "formula", "code", "example", "two_column"}
+CONTENT_PAGE_TYPES = {"content", "formula", "code", "example", "two_column", "chart"}
 
 
 # --------------------------------------------------------------------------- #
@@ -69,6 +69,37 @@ def _clean_points(value: Any) -> list[str]:
             continue
         out.append(item)
     return out
+
+
+_CODE_SIGNALS = re.compile(
+    r"代码|算法|函数|实现|编程|语法|程序|脚本|命令|伪代码|遍历|递归|SQL|API|def |class |for |while |code",
+    re.IGNORECASE,
+)
+_FORMULA_SIGNALS = re.compile(
+    r"公式|定理|方程|推导|证明|积分|导数|微分|极限|级数|矩阵|向量|概率|分布|期望|方差|不等式|求和|sqrt|frac"
+)
+
+
+def _ensure_rich_coverage(outline: list[dict]) -> list[dict]:
+    """Safety net: if the deck shows strong code/formula signals but the planner
+    left every page as 'content', upgrade the single strongest-signal page so the
+    renderer's code/formula capabilities actually get exercised for that subject."""
+    present = {p.get("type") for p in outline}
+    for rich, pattern in (("code", _CODE_SIGNALS), ("formula", _FORMULA_SIGNALS)):
+        if rich in present:
+            continue
+        best, best_score = None, 0
+        for page in outline:
+            if page.get("type") != "content":
+                continue
+            text = f"{page.get('title', '')} {' '.join(page.get('keyPoints', []))}"
+            score = len(pattern.findall(text))
+            if score > best_score:
+                best, best_score = page, score
+        if best is not None and best_score > 0:
+            best["type"] = rich
+            present.add(rich)
+    return outline
 
 
 def _content_titles_from_plan(intent: dict) -> list[str]:
@@ -134,12 +165,14 @@ def _build_outline_prompt(intent: dict, titles: list[str], rag_context: str) -> 
 1) 为每一页给出 3-5 个【具体】知识点（keyPoints），每条要可讲解、有信息量。
    反例（太空泛，禁止）：「介绍 IPv6 地址」「讲解基本原理」
    正例（具体）：「IPv6 用 128 位地址，写作 8 组 16 位十六进制，可省略前导零与连续零段」
-2) 为每页选择最合适的页类型 type：
-   - content：要点讲解（默认，大多数页用它）
-   - formula：以公式/推导为主
-   - code：以代码示例为主
-   - example：以例题/案例求解为主
-   - two_column：两栏对比
+2) 为每页选择最合适的页类型 type，让课件有恰当的富类型，不要所有页都用 content：
+   - formula：本页核心是数学公式/定理/方程/推导/统计模型 → 用 formula（数学/理工类课程通常应有 1-2 页）
+   - code：本页核心是代码/算法实现/编程示例/命令/SQL → 用 code（计算机/编程类课程通常应有 1-2 页）
+   - two_column：本页是两个概念/方法/方案的对比 → 用 two_column
+   - example：本页是例题/案例的求解步骤 → 用 example
+   - chart：本页核心是数据/趋势/占比且适合可视化 → 用 chart
+   - content：以上都不典型时用（要点讲解）
+   判据：标题或知识点含"公式/定理/方程/推导/积分/导数/概率"→formula；含"代码/算法/函数/实现/语法/SQL"→code；含"对比/区别/优缺点"→two_column；含"例题/求解/计算步骤"→example
 3) 严格保持给定页数与顺序，用 index 对应上面的页（标题已固定，无需返回标题）。
 
 只输出 JSON：
@@ -197,7 +230,7 @@ def generate_outline(intent: dict, rag_chunks: list[str]) -> list[dict]:
                 "keyPoints": key_points[:5],
             }
         )
-    return outline
+    return _ensure_rich_coverage(outline)
 
 
 # --------------------------------------------------------------------------- #
@@ -211,10 +244,11 @@ _PAGE_SYSTEM = (
 
 _PAGE_SCHEMA_HINT = """根据页类型(type)输出对应字段，只输出 JSON：
 - content：{"type":"content","title":"...","bullets":["每条具体、≤30字、有信息量","..."],"tip":"给老师的一句讲解提示","notes":"可选：本页讲稿要点"}
-- formula：{"type":"formula","title":"...","formulas":[{"label":"名称","expr":"LaTeX 表达式","explanation":"含义"}],"explanation":"整体说明"}
-- code：{"type":"code","title":"...","language":"python","code":"可运行的示例代码","explanation":"代码讲解"}
+- formula：{"type":"formula","title":"...","formulas":[{"label":"名称","expr":"合法LaTeX公式(标准LaTeX数学语法:分数frac/根号sqrt/求和sum/积分int/上标^/下标_;禁止中文与$符号)","explanation":"中文含义"}],"explanation":"整体说明"} （至少给出1-2个核心公式）
+- code：{"type":"code","title":"...","language":"python","code":"真实可运行的多行示例代码(含简短注释)","explanation":"代码讲解"}
 - example：{"type":"example","title":"...","problem":"题目","steps":["求解步骤1","步骤2"],"answer":"答案"}
-- two_column：{"type":"two_column","title":"...","left":{"title":"左栏标题","points":["..."]},"right":{"title":"右栏标题","points":["..."]}}"""
+- two_column：{"type":"two_column","title":"...","left":{"title":"左栏标题","points":["..."]},"right":{"title":"右栏标题","points":["..."]}}
+- chart：{"type":"chart","title":"...","chartType":"bar|line|pie","data":{"labels":["..."],"values":[数字]},"caption":"图注"}"""
 
 
 def _build_page_prompt(page: dict, global_titles: list[str], intent: dict, page_rag: str) -> str:

@@ -27,7 +27,7 @@
       "title": "Stage-2 富类型产出（公式/代码/图表/两栏）",
       "description": "让两阶段生成在合适学科场景真正产出富类型页，并能被 M1 渲染。",
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "two_stage Stage1 能按内容分配 formula/code/two_column/chart 类型（prompt 含明确判据）",
         "Stage2 对 formula 产出 formulas[{label,expr,explanation}]，code 产出 language+code，two_column 产出 left/right{title,points}",
@@ -41,7 +41,7 @@
       "title": "生成后验证 & 低风险修补",
       "description": "页级验证(空/薄/超字/漏知识点)，只做低风险修补(薄页重生、超字压缩)。",
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "backend/core/verify_repair.py 存在，verify_and_repair(slides_json, intent)->(slides_json, report)",
         "检测项：内容页 bullet 过少(<3)/为空、单条 bullet 过长(超阈值)、缺失关键字段",
@@ -55,7 +55,7 @@
       "title": "导出健壮性 + 富教案 docx + 演示速度",
       "description": "默认不因不可达 PptxGenJS 空等；教案 docx 含逐页真实教学内容。",
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "acceptanceCriteria": [
         "默认生成路径不再出现 PptxGenJS 502 的 ~10s 空等(新渲染器纯本地，或探测可达才用)",
         "教案 docx 含逐页真实内容(教学目标/各知识点要点/重难点/小结)，非仅参考文献列表",

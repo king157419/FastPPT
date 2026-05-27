@@ -43,5 +43,26 @@
 - M2 待办洞察：Stage1 当前很少给数学选 formula、给编程选 code(eval 显示全 content)，
   导致渲染器富能力用不上、真实 deck pictures=0。M2 要强化 Stage1 类型判定 + Stage2 字段产出。
 
-### 迭代 4 - M2 富类型产出 (进行中)
+### 迭代 4 - M2 富类型产出 ✅ (passes:true)
+- two_stage Stage1 prompt 强化类型判据 + 新增富类型覆盖兜底 _ensure_rich_coverage
+  (数学缺formula/编程缺code时升级最强信号content页)；Stage2 公式收紧为合法LaTeX(禁中文与$)；新增 chart 类型。
+- eval 真实验证(全 PASS)：数学→formula×2(pptx 4图片)；CS→formula+code(3图片)；通用→code+two_column。
+  slide_count 全部 == pages(split-brain 修复在真实 deck 坐实)；渲染 0.04-0.61s；生成 11-15s。
+- 富类型页文件体积明显增大(95KB/93KB vs 旧45KB)，公式作为图片嵌入成功。
+
+### 迭代 5 - M3 验证&修补 ✅ (passes:true)
+- core/verify_repair.py：检测薄页/超长bullet/缺字段；低风险修补(薄content/summary页重生、超长bullet压缩)。
+  接入 generate_service 同步+异步两路(VERIFY_REPAIR 默认开)。
+- test_verify_repair.py 3项通过(薄页重生/超长压缩/好页不动)；真实e2e(红黑树)in-chain不破坏，meta标注verify_repair。
+- 设计原则(借 Auto-Slides)：修补只做高置信、局部、低风险，不全局重设计、不风格漂移。
+
+### 迭代 6 - M5 导出健壮性 + 富教案 ✅ (passes:true)
+- M5a(演示速度)：新渲染器默认优先、纯本地，已天然绕过不可达 PptxGenJS(eval render 0.04-0.61s，无502空等)。
+- M5b(富教案 docx)：重写 doc_gen.py 为中文教案，吃 slides_json 逐页真实内容(含公式/代码/例题/两栏/讲稿notes)，
+  新增 板书设计/作业布置/参考出处；接入 generate_service 传 slides_json。
+  验证：真实e2e docx 46段、中文章节(一~六)齐全、含逐页内容。
+- 可靠性：DeepSeek 客户端加 timeout=90 + max_retries=2(应对偶发超时，避免降级到薄兜底)。
+
+### 迭代 7 - M4 结构化需求录入 (进行中)
+- 后端 compile_teaching_spec 已能承接结构化字段；前端加最小"需求确认卡"组件，放行生成前展示摘要。
 
