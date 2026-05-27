@@ -16,6 +16,8 @@ def _write_dummy_file(path: str, content: bytes) -> str:
 
 def test_generate_injects_mode_a_reference_outline(monkeypatch, tmp_path):
     source_index.reset_all()
+    # Capture the intent inside the single-shot generator stub (two-stage bypasses it).
+    monkeypatch.setenv("TWO_STAGE_GEN", "0")
     monkeypatch.setattr(generate_api, "OUTPUT_DIR", str(tmp_path))
     monkeypatch.setattr(generate_api, "_retrieve_teaching_knowledge", lambda _intent: "")
     monkeypatch.setattr(generate_api, "_learn_from_generation", lambda _intent, _slides: {"compound_factor": 1.0})
@@ -43,7 +45,7 @@ def test_generate_injects_mode_a_reference_outline(monkeypatch, tmp_path):
     monkeypatch.setattr(
         generate_api,
         "generate_docx",
-        lambda _intent, _rag, output_path, evidence_entries=None: _write_dummy_file(output_path, b"docx"),
+        lambda _intent, _rag, output_path, evidence_entries=None, slides_json=None: _write_dummy_file(output_path, b"docx"),
     )
 
     file_id = "ppt001"
@@ -78,6 +80,7 @@ def test_generate_injects_mode_a_reference_outline(monkeypatch, tmp_path):
 
 def test_generate_attaches_page_evidence(monkeypatch, tmp_path):
     source_index.reset_all()
+    monkeypatch.setenv("TWO_STAGE_GEN", "0")
     monkeypatch.setattr(generate_api, "OUTPUT_DIR", str(tmp_path))
     monkeypatch.setattr(generate_api, "_retrieve_teaching_knowledge", lambda _intent: "")
     monkeypatch.setattr(generate_api, "_learn_from_generation", lambda _intent, _slides: {"compound_factor": 1.0})
@@ -101,7 +104,7 @@ def test_generate_attaches_page_evidence(monkeypatch, tmp_path):
     monkeypatch.setattr(
         generate_api,
         "generate_docx",
-        lambda _intent, _rag, output_path, evidence_entries=None: _write_dummy_file(output_path, b"docx"),
+        lambda _intent, _rag, output_path, evidence_entries=None, slides_json=None: _write_dummy_file(output_path, b"docx"),
     )
 
     file_id = "doc001"

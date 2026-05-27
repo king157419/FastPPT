@@ -20,6 +20,7 @@ def _write_dummy_file(path: str, content: bytes) -> str:
 def test_demo_chain_smoke(monkeypatch, tmp_path):
     monkeypatch.setenv("CONTEST_FORCE_PLAIN", "true")
     monkeypatch.setenv("ENABLE_AGENT", "false")
+    monkeypatch.setenv("TWO_STAGE_GEN", "0")
     monkeypatch.delenv("REDIS_URL", raising=False)
     monkeypatch.delenv("RAGFLOW_BASE_URL", raising=False)
     monkeypatch.delenv("RAGFLOW_API_KEY", raising=False)
@@ -48,7 +49,7 @@ def test_demo_chain_smoke(monkeypatch, tmp_path):
     monkeypatch.setattr(
         generate_api,
         "generate_docx",
-        lambda _intent, _rag, output_path, evidence_entries=None: _write_dummy_file(output_path, b"docx"),
+        lambda _intent, _rag, output_path, evidence_entries=None, slides_json=None: _write_dummy_file(output_path, b"docx"),
     )
 
     client = TestClient(backend_main.app)

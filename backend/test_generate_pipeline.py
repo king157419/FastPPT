@@ -15,6 +15,10 @@ def _write_dummy_file(path: str, content: bytes) -> str:
 
 
 def test_generate_returns_pptx_and_docx(monkeypatch, tmp_path):
+    # Contract test for the pipeline plumbing: force the single-shot generator so
+    # the patched generate_slides_json is used (two-stage has its own tests and
+    # would otherwise bypass the stub and call the real LLM).
+    monkeypatch.setenv("TWO_STAGE_GEN", "0")
     monkeypatch.setattr(generate_api, "OUTPUT_DIR", str(tmp_path))
     monkeypatch.setattr(generate_api, "_collect_rag", lambda _intent: [])
     monkeypatch.setattr(generate_api, "_retrieve_teaching_knowledge", lambda _intent: "")
@@ -35,7 +39,7 @@ def test_generate_returns_pptx_and_docx(monkeypatch, tmp_path):
     monkeypatch.setattr(
         generate_api,
         "generate_docx",
-        lambda _intent, _rag, output_path, evidence_entries=None: _write_dummy_file(output_path, b"docx"),
+        lambda _intent, _rag, output_path, evidence_entries=None, slides_json=None: _write_dummy_file(output_path, b"docx"),
     )
 
     req = generate_api.GenerateRequest(
@@ -147,7 +151,7 @@ def test_async_generate_builds_slide_plan_after_mode_a_outline(monkeypatch, tmp_
     monkeypatch.setattr(
         generate_api,
         "generate_docx",
-        lambda _intent, _rag, output_path, evidence_entries=None: _write_dummy_file(output_path, b"docx"),
+        lambda _intent, _rag, output_path, evidence_entries=None, slides_json=None: _write_dummy_file(output_path, b"docx"),
     )
 
     job_id = "job_async_order"
