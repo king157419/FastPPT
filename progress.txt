@@ -63,6 +63,13 @@
   验证：真实e2e docx 46段、中文章节(一~六)齐全、含逐页内容。
 - 可靠性：DeepSeek 客户端加 timeout=90 + max_retries=2(应对偶发超时，避免降级到薄兜底)。
 
-### 迭代 7 - M4 结构化需求录入 (进行中)
-- 后端 compile_teaching_spec 已能承接结构化字段；前端加最小"需求确认卡"组件，放行生成前展示摘要。
+### 迭代 7 - M4 结构化需求录入 ✅ (passes:true)
+- 新增 frontend/src/components/RequirementForm.vue：表单优先入口(主题/目标/学生/时长/重点/知识点/风格/配图/最新案例)，
+  发 intentReady 复用现有链路，含需求摘要；App.vue 仅加 2 行(import+标签)，其它组件不动。
+- 验证：npm run build 成功(9.42s)；compile_teaching_spec 正确编译表单intent(必填齐、need_images→must_include_visuals)。
+
+### M6 SourceAnchor — 本次 overnight 暂缓(超核心范围、风险较高、收益相对小)
+- 基础"可追溯"已具备：渲染器页脚显示来源、evidence 已按知识点绑定。完整页/段定位锚点留待后续。
+
+### 全部 5 个 PRD story (M1/M2/M3/M5/M4) 已 passes:true → 进入 ralph 验收(reviewer→deslop→回归→cancel)
 

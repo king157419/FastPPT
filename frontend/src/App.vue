@@ -1,5 +1,7 @@
 <template>
   <div class="app-shell">
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
     <header class="app-header">
       <div class="header-inner">
         <div class="brand">
@@ -11,7 +13,10 @@
               <rect x="13" y="13" width="8" height="8" rx="2" fill="#0D9488"/>
             </svg>
           </div>
-          <span class="brand-name">TeachMind</span>
+          <div class="brand-copy">
+            <span class="brand-name">FastPPT Studio</span>
+            <span class="brand-sub">Contest Demo</span>
+          </div>
         </div>
         <div class="header-center">
           <span class="tagline">AI 智能备课助手</span>
@@ -29,6 +34,7 @@
       <aside class="left-panel">
         <FileUpload @uploaded="onUploaded" />
         <DocumentPanel @insertPrompt="onInsertPrompt" />
+        <RequirementForm @intentReady="onIntentReady" />
         <ChatPanel
           :prefillPayload="chatPrefill"
           @intentReady="onIntentReady"
@@ -41,11 +47,13 @@
         />
       </aside>
       <section class="right-panel">
-        <PreviewPanel
-          :slidesJson="slidesJson"
-          :generatedResult="generatedResult"
-          @slidesUpdated="onSlidesUpdated"
-        />
+        <div class="preview-shell">
+          <PreviewPanel
+            :slidesJson="slidesJson"
+            :generatedResult="generatedResult"
+            @slidesUpdated="onSlidesUpdated"
+          />
+        </div>
       </section>
     </main>
   </div>
@@ -55,6 +63,7 @@
 import { ref } from 'vue'
 import FileUpload from './components/FileUpload.vue'
 import DocumentPanel from './components/DocumentPanel.vue'
+import RequirementForm from './components/RequirementForm.vue'
 import ChatPanel from './components/ChatPanel.vue'
 import GenerateBtn from './components/GenerateBtn.vue'
 import PreviewPanel from './components/PreviewPanel.vue'
@@ -90,40 +99,72 @@ function onInsertPrompt(text) {
 
 body {
   font-family: 'DM Sans', sans-serif;
-  background: #F7F6F3;
-  color: #1C1C1E;
+  background: #e9f1ec;
+  color: #102520;
   -webkit-font-smoothing: antialiased;
 }
 
 :root {
-  --teal: #0D9488;
-  --teal-light: #CCFBF1;
-  --teal-mid: #14B8A6;
-  --bg: #F7F6F3;
-  --surface: #FFFFFF;
-  --border: #E8E6E1;
-  --text: #1C1C1E;
-  --text-2: #6B7280;
-  --text-3: #9CA3AF;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.04);
-  --radius: 12px;
+  --teal: #0f766e;
+  --teal-light: #cffafe;
+  --teal-mid: #14b8a6;
+  --bg: #edf4ef;
+  --surface: rgba(255, 255, 255, 0.84);
+  --surface-strong: #ffffff;
+  --border: #d6e4dd;
+  --text: #102520;
+  --text-2: #506760;
+  --text-3: #7e958d;
+  --shadow-sm: 0 2px 8px rgba(9, 29, 22, 0.06);
+  --shadow-md: 0 10px 28px rgba(9, 29, 22, 0.1);
+  --shadow-lg: 0 22px 48px rgba(9, 29, 22, 0.16);
+  --radius: 16px;
   --radius-sm: 8px;
 }
 
 .app-shell {
   display: flex; flex-direction: column;
   height: 100vh; overflow: hidden;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 8% -10%, rgba(20, 184, 166, 0.22), transparent 42%),
+    radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.18), transparent 35%),
+    linear-gradient(160deg, #eef5f0 0%, #e4f0ea 55%, #f5f6ef 100%);
+  position: relative;
+}
+
+.ambient {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(40px);
+  opacity: 0.35;
+  z-index: 0;
+}
+
+.ambient-a {
+  width: 320px;
+  height: 320px;
+  background: rgba(20, 184, 166, 0.4);
+  top: -130px;
+  left: -80px;
+}
+
+.ambient-b {
+  width: 280px;
+  height: 280px;
+  background: rgba(245, 158, 11, 0.3);
+  bottom: -100px;
+  right: 15%;
 }
 
 .app-header {
-  height: 56px; flex-shrink: 0;
-  background: var(--surface);
+  height: 64px; flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   z-index: 10;
+  position: relative;
 }
 .header-inner {
   max-width: 100%; height: 100%;
@@ -132,18 +173,35 @@ body {
 }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-logo {
-  width: 36px; height: 36px; background: var(--teal-light);
-  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px;
+  background: linear-gradient(145deg, #c2faf6, #f9fffd);
+  border: 1px solid rgba(15, 118, 110, 0.2);
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+}
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
 }
 .brand-name {
   font-family: 'Outfit', sans-serif;
   font-size: 18px; font-weight: 700;
   color: var(--text); letter-spacing: -0.3px;
 }
+.brand-sub {
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .header-center { flex: 1; display: flex; justify-content: center; }
 .tagline {
-  font-size: 13px; color: var(--text-3);
-  font-weight: 400; letter-spacing: 0.2px;
+  font-size: 12px;
+  color: var(--text-2);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 .header-status { margin-left: auto; }
 .status-pill {
@@ -169,34 +227,66 @@ body {
 
 .app-body {
   display: flex; flex: 1; overflow: hidden;
+  gap: 12px;
+  padding: 12px;
+  position: relative;
+  z-index: 1;
 }
 .left-panel {
-  width: 420px; flex-shrink: 0;
+  width: 430px; flex-shrink: 0;
   display: flex; flex-direction: column; gap: 10px;
-  overflow-y: auto; padding: 16px;
-  border-right: 1px solid var(--border);
-  background: var(--bg);
+  overflow-y: auto; padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(6px);
 }
 .left-panel::-webkit-scrollbar { width: 4px; }
-.left-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.left-panel::-webkit-scrollbar-thumb { background: rgba(80, 103, 96, 0.35); border-radius: 2px; }
 .right-panel {
-  flex: 1; overflow: hidden; padding: 16px;
-  background: var(--bg);
+  flex: 1; overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(6px);
+  min-width: 0;
+}
+.preview-shell {
+  width: 100%;
+  height: 100%;
+  padding: 14px;
+}
+.left-panel > * {
+  animation: enter-up 420ms ease both;
+}
+.left-panel > *:nth-child(2) { animation-delay: 50ms; }
+.left-panel > *:nth-child(3) { animation-delay: 90ms; }
+.left-panel > *:nth-child(4) { animation-delay: 130ms; }
+
+@keyframes enter-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 980px) {
   .app-body {
     flex-direction: column;
+    padding: 8px;
+    gap: 8px;
   }
   .left-panel {
     width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
+    border-bottom: none;
     max-height: 46vh;
+    padding: 10px;
   }
   .right-panel {
     min-height: 54vh;
-    padding: 10px;
+  }
+  .preview-shell {
+    padding: 8px;
   }
   .header-inner {
     padding: 0 12px;
