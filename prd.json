@@ -1,72 +1,80 @@
 {
-  "projectName": "FastPPT后端生产级改进",
-  "version": "1.0.0",
+  "projectName": "FastPPT 演示质量构建（PRD 对齐）",
+  "version": "2.0.0",
+  "_basis": "A04-PRD.md + docs/10_P0-P1实施顺序与验收标准.md + ppt-解决方案.md。原则：working-software-first、加法+特性开关、页级主链、每步真实 DeepSeek 生成验证。",
   "stories": [
     {
-      "id": "BE-001",
-      "title": "RAG系统升级到向量检索",
-      "description": "从TF-IDF升级到RAGFlow向量检索，提升检索准确率到85%+",
+      "id": "M1-RENDER",
+      "title": "渲染器重做：忠实渲染 pages[] 富内容（修 split-brain）",
+      "description": "新建确定性 python-pptx 渲染器，直接按 slides_json.pages[] 出图，覆盖富类型，不再用 key_points 重建、不再把富 block 拍平成 bullet。纯本地、无外部服务依赖。",
       "priority": 1,
       "passes": true,
       "acceptanceCriteria": [
-        "✅ backend/integrations/ragflow_client.py 文件存在，包含 RAGFlowClient 类",
-        "✅ RAGFlowClient 实现文档上传、检索、删除功能",
-        "✅ backend/core/rag.py 重构完成，支持向量检索和 TF-IDF fallback",
-        "✅ backend/api/retrieval.py 创建完成，包含 4 个 API 端点",
-        "✅ API 端点实现完整",
-        "✅ 错误处理完善，包含重试机制和连接池管理",
-        "⚠️ 检索准确率需要实际 RAGFlow 服务测试"
+        "backend/core/pptx_renderer.py 存在，导出 render_pptx(intent, slides_json, output_path)->str",
+        "渲染直接基于 slides_json.pages[]：N 页输入产出 N 张对应幻灯片（不再固定重建封面/目录/小结）",
+        "formula 页：每个公式经 matplotlib mathtext 渲染为 PNG 并作为 Picture 嵌入（pptx 中存在图片形状）",
+        "code 页：等宽字体 + 深色代码面板 + 语言标签",
+        "two_column 页：渲染为左右双栏（表格或并排面板）",
+        "content 页：title+bullets+tip，且 page.notes 写入幻灯片演讲者备注(notes_slide)",
+        "page.evidence 存在时在页脚渲染来源引用（可追溯）",
+        "generate_pptx_from_slides_json 在 NEW_RENDERER 开关(默认开)下走新渲染器；关闭或异常时回退旧路径",
+        "新渲染器不依赖外部 PptxGenJS 服务（纯 python-pptx，无网络等待）",
+        "backend/test_pptx_renderer.py 全通过；生成的 pptx 可被 python-pptx 重新打开且 slide 数==pages 数"
       ]
     },
     {
-      "id": "BE-002",
-      "title": "LangChain Agent集成",
-      "description": "集成LangChain Agent实现智能对话和工具调用",
+      "id": "M2-RICHTYPES",
+      "title": "Stage-2 富类型产出（公式/代码/图表/两栏）",
+      "description": "让两阶段生成在合适学科场景真正产出富类型页，并能被 M1 渲染。",
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "acceptanceCriteria": [
-        "✅ backend/integrations/langchain_agent.py 文件存在，包含 TeachingAgent 类",
-        "✅ TeachingAgent 实现 chat() 和 chat_stream() 方法",
-        "✅ 工具注册完成：retrieve_knowledge, generate_ppt_content, get_preview_url",
-        "✅ Memory 持久化实现（InMemorySaver + InMemoryStore）",
-        "✅ backend/api/chat.py 集成 Agent，保留现有 SSE 流式功能",
-        "✅ 支持 use_agent 参数切换模式",
-        "⚠️ 多轮对话和工具调用需要实际测试",
-        "⚠️ 会话恢复需要实际测试"
+        "two_stage Stage1 能按内容分配 formula/code/two_column/chart 类型（prompt 含明确判据）",
+        "Stage2 对 formula 产出 formulas[{label,expr,explanation}]，code 产出 language+code，two_column 产出 left/right{title,points}",
+        "真实生成(数学:拉格朗日中值定理)：产出>=1个 formula 页，expr 含 LaTeX 结构(如 \\frac/^/_)，且能被 M1 渲染成图片",
+        "真实生成(编程:红黑树插入)：产出>=1个 code 页且 code 非空多行",
+        "全链路 e2e 真实生成仍通过(pptx/docx/blocks 不报错)"
       ]
     },
     {
-      "id": "BE-003",
-      "title": "PptxGenJS服务",
-      "description": "创建Node.js PptxGenJS服务，提升PPT生成速度",
+      "id": "M3-VERIFY",
+      "title": "生成后验证 & 低风险修补",
+      "description": "页级验证(空/薄/超字/漏知识点)，只做低风险修补(薄页重生、超字压缩)。",
       "priority": 3,
       "passes": false,
       "acceptanceCriteria": [
-        "services/pptxgenjs/ 目录创建，包含 package.json, server.js, generator.js",
-        "Express 服务器运行在 3001 端口",
-        "支持中文字体（思源黑体或微软雅黑）",
-        "实现教学PPT生成器，支持 teaching_spec 和 slide_blocks",
-        "backend/core/ppt_gen.py 重构，调用 PptxGenJS 服务",
-        "保留 python-pptx 作为 fallback",
-        "生成速度测试：10页PPT在20秒内完成（平均2秒/页）",
-        "生成的PPT可以正常打开，中文显示正常"
+        "backend/core/verify_repair.py 存在，verify_and_repair(slides_json, intent)->(slides_json, report)",
+        "检测项：内容页 bullet 过少(<3)/为空、单条 bullet 过长(超阈值)、缺失关键字段",
+        "修补仅低风险：薄页触发该页重生(调用 Stage2 单页)、超长 bullet 压缩；不做全局重设计",
+        "接入 generate_service(VERIFY_REPAIR 开关默认开) 在 attach_blocks 之前",
+        "backend/test_verify_repair.py：注入薄页→修补后该页 bullet>=3 且无超长，通过"
       ]
     },
     {
-      "id": "BE-004",
-      "title": "Docker部署和监控",
-      "description": "创建Docker Compose配置，实现一键部署和监控",
+      "id": "M5-EXPORT",
+      "title": "导出健壮性 + 富教案 docx + 演示速度",
+      "description": "默认不因不可达 PptxGenJS 空等；教案 docx 含逐页真实教学内容。",
       "priority": 4,
       "passes": false,
       "acceptanceCriteria": [
-        "docker/docker-compose.yml 文件创建，包含所有服务",
-        "服务包含：FastAPI, PptxGenJS, PostgreSQL, Redis",
-        "docker-compose up 一键启动成功",
-        "所有服务健康检查通过",
-        "日志集中管理（使用 Docker logs）",
-        "backend/core/monitoring.py 创建，包含性能监控和错误追踪",
-        "健康检查端点 /health 返回所有服务状态",
-        "服务自动重启机制测试通过"
+        "默认生成路径不再出现 PptxGenJS 502 的 ~10s 空等(新渲染器纯本地，或探测可达才用)",
+        "教案 docx 含逐页真实内容(教学目标/各知识点要点/重难点/小结)，非仅参考文献列表",
+        "真实生成 docx 包含各内容页标题与要点(可被 python-docx 读出且段落数显著增加)",
+        "现有全链路 e2e 真实生成通过"
+      ]
+    },
+    {
+      "id": "M4-INTAKE",
+      "title": "结构化需求录入（前端表单 + 后端编译）",
+      "description": "放行生成前用结构化表单收束需求并展示摘要；最小可用、加法、不破坏现有聊天流。",
+      "priority": 5,
+      "passes": false,
+      "acceptanceCriteria": [
+        "前端新增结构化需求表单组件(教学目标/学生/时长/重点难点/沿用旧PPT风格/要图/要最新案例)",
+        "生成放行前展示需求摘要卡",
+        "后端能接收结构化字段并编译进 TeachingSpec(compile_teaching_spec 兼容)",
+        "前端 npm run build 成功；不破坏现有聊天/上传/生成流",
+        "现有后端 e2e 真实生成仍通过"
       ]
     }
   ]

@@ -22,3 +22,26 @@
 - 创建 progress.txt 记录进度
 - 准备开始实现
 
+### 迭代 2 (2026-05-28) - 方向转向：PRD 驱动的演示质量构建
+- 旧 prd.json(后端生产级:RAGFlow/LangChain/PptxGenJS服务/Docker) 已备份为 prd.legacy.json。
+  该方向是 proadvises.md 批评的"advanced split-brain/重依赖"，与 A04-PRD 的 working-software-first 相反。
+- 新 prd.json 对齐 A04-PRD + docs/10：M1 渲染器重做 → M2 富类型 → M3 验证修补 → M5 导出/教案 → M4 需求录入。
+- 已完成 M0(两阶段生成 two_stage_gen.py，已提交 76079ed)。
+- 完整规划见 OVERNIGHT_BUILD_PLAN.md。
+- 学习点：单次直出常因 4096token JSON 截断→静默降级英文占位(比"内容空洞"更严重)；
+  渲染器 split-brain(导出无视 pages[]、富block拍平bullet)是 PPT 质量差的第二根因。
+
+### 迭代 3 - M1 渲染器重做 ✅ (passes:true)
+- 新增 core/pptx_renderer.py：确定性 python-pptx，按 pages[] 忠实渲染
+  (cover/agenda/content/summary/code/formula/two_column/example/chart/image)；
+  公式 LaTeX→matplotlib mathtext→PNG 嵌入；代码深色等宽面板；双栏；演讲者备注(notes_slide)；来源页脚。
+- 接入 ppt_gen.generate_pptx_from_slides_json，开关 NEW_RENDERER(默认开)优先走新渲染器，异常回退旧路径。
+  副作用红利：默认绕过不可达 PptxGenJS，消除 ~10s 502 空等(M5 速度点提前达成)。
+- 验证：test_pptx_renderer.py 3 项通过(页数对齐/代码文本保留/双栏/公式图片/演讲者备注/来源)；
+  真实 e2e(数学题) slides7==pages7、13.3s、无空等。
+- eval 工具 backend/eval/quality_check.py 就绪(executor 委派构建，3主题真实跑 PASS)。
+- M2 待办洞察：Stage1 当前很少给数学选 formula、给编程选 code(eval 显示全 content)，
+  导致渲染器富能力用不上、真实 deck pictures=0。M2 要强化 Stage1 类型判定 + Stage2 字段产出。
+
+### 迭代 4 - M2 富类型产出 (进行中)
+

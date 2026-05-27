@@ -442,9 +442,21 @@ def call_pptxgenjs_service_from_slides_json(
 def generate_pptx_from_slides_json(intent: dict[str, Any], slides_json: dict[str, Any], output_path: str) -> str:
     """
     根据 slides_json 直接生成 .pptx。
-    优先使用 PptxGenJS 服务，失败时 fallback 到 python-pptx。
+    默认走确定性的 pptx_renderer（忠实渲染 pages[]，纯本地、无外部服务、无网络等待）；
+    设 NEW_RENDERER=0 可关闭，回退到 PptxGenJS 服务 / python-pptx 旧路径。
     """
     start_time = time.time()
+
+    try:
+        from core.pptx_renderer import render_enabled, render_pptx
+
+        if render_enabled():
+            result = render_pptx(intent, slides_json, output_path)
+            logger.info(f"[PPT生成] 使用 pptx_renderer 生成成功，总耗时 {time.time() - start_time:.2f}s")
+            return result
+    except Exception as exc:
+        logger.warning(f"[PPT生成] pptx_renderer 失败({exc})，回退旧路径")
+
     result = call_pptxgenjs_service_from_slides_json(intent, slides_json, output_path)
     if result:
         duration = time.time() - start_time
