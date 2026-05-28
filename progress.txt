@@ -82,3 +82,13 @@
 - deslop：鉴于 Opus architect 已做完整质量+可维护性评审(无 slop，仅 pre-existing 死代码)，且变更集已验证，判定带理由跳过无监督自动清理(等同 --no-deslop)。
 - 结论：5 个 PRD 里程碑完成并验收通过。M6 暂缓。未 push、未并入 master，留分支 overnight/prd-build 待 review。
 
+### 迭代 9 - 视觉与内容重做（装 LibreOffice 后，眼见为实地迭代）
+- 装 LibreOffice，建视觉自检闭环：eval/render_preview.py(pptx→pdf→png) + render_json.py + make_fixtures.py(缓存slides_json免重复LLM)。
+- 诊断基线：标题撞装饰线/带原始公式、版面大片空白、视觉平庸、代码溢出。
+- 重写 core/pptx_renderer.py 为名校讲义系统：克制配色+字阶、标题清洗(_short_title去公式/限长)+固定头区杜绝撞线、
+  正文垂直居中填满版面、页码页脚、封面设计感、公式柔和卡片、代码语法高亮(_hl_runs)+按面板高度自适应字号防溢出、
+  两栏色块标题、例题面板。逐页渲图核对(cover/agenda/formula/code/two_column/example/content/summary)反复修到位。
+- 内容(content)收紧：Stage2 要点"术语开头/≤24字/句式平行"；_summary_page 改为干净标题回顾(去除"左半部分"类碎片)。
+- 验证：test_pptx_renderer 3项通过；全量 35 passed(仅3个pre-existing chat_fallback)；3类样本渲图人工核对达标。
+- 渲染样张见 backend/outputs/_preview/*.png（可直接看）。
+

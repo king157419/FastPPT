@@ -243,7 +243,7 @@ _PAGE_SYSTEM = (
 )
 
 _PAGE_SCHEMA_HINT = """根据页类型(type)输出对应字段，只输出 JSON：
-- content：{"type":"content","title":"...","bullets":["每条具体、≤30字、有信息量","..."],"tip":"给老师的一句讲解提示","notes":"可选：本页讲稿要点"}
+- content：{"type":"content","title":"...","bullets":["以关键术语开头、≤24字、句式平行、含具体信息(定义/数据/对比/步骤)","..."],"tip":"给老师的一句讲解提示","notes":"可选：本页讲稿要点"}
 - formula：{"type":"formula","title":"...","formulas":[{"label":"名称","expr":"合法LaTeX公式(标准LaTeX数学语法:分数frac/根号sqrt/求和sum/积分int/上标^/下标_;禁止中文与$符号)","explanation":"中文含义"}],"explanation":"整体说明"} （至少给出1-2个核心公式）
 - code：{"type":"code","title":"...","language":"python","code":"真实可运行的多行示例代码(含简短注释)","explanation":"代码讲解"}
 - example：{"type":"example","title":"...","problem":"题目","steps":["求解步骤1","步骤2"],"answer":"答案"}
@@ -279,7 +279,7 @@ def _build_page_prompt(page: dict, global_titles: list[str], intent: dict, page_
 
 要求：
 1) 内容要具体、有信息量，体现学科深度，优先覆盖上面列出的知识点。
-2) content 页给 4-6 条要点；每条是实质信息（定义/数据/对比/步骤/易错点），不要空话。
+2) content 页给 4-6 条要点；每条 ≤24 字、以关键术语开头、句式平行，是实质信息（定义/数据/对比/步骤/易错点），杜绝空话与完整口语句。
 3) 不要写过渡语、不要写完整口语句子。
 
 {_PAGE_SCHEMA_HINT}"""
@@ -378,8 +378,14 @@ def _agenda_page(titles: list[str]) -> dict:
 def _summary_page(intent: dict, outline: list[dict]) -> dict:
     takeaways: list[str] = []
     for page in outline:
+        title = _safe_str(page.get("title"))
+        if title and 2 <= len(title) <= 24:
+            takeaways.append(title)  # clean recap of what each page covered
+            continue
         kps = _clean_points(page.get("keyPoints"))
-        takeaways.append(kps[0] if kps else _safe_str(page.get("title")))
+        raw = kps[0] if kps else title
+        crisp = re.split(r"[：:。，,；;]", raw)[0].strip() if raw else ""
+        takeaways.append(crisp[:24] if crisp else title)
     takeaways = _clean_points(takeaways)
     seen: set[str] = set()
     deduped = [t for t in takeaways if t and not (t in seen or seen.add(t))]
