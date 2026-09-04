@@ -4,7 +4,7 @@ import os
 import sys
 
 # Set environment variables
-os.environ["DEEPSEEK_API_KEY"] = "sk-f6a3e145bcdf477a8b07d964fadf9220"
+os.environ.setdefault("DEEPSEEK_API_KEY", "sk-REPLACE_ME")  # 原硬编码密钥已移除
 os.environ["REDIS_URL"] = ""
 
 print("Testing agent initialization...")

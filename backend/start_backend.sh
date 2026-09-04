@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 
 # Set environment variables explicitly
 export PYTHONPATH=.
-export DEEPSEEK_API_KEY=sk-f6a3e145bcdf477a8b07d964fadf9220
+export DEEPSEEK_API_KEY="${DEEPSEEK_API_KEY:-}"  # 原硬编码密钥已移除，请通过环境变量或 .env 提供
 export ANTHROPIC_API_KEY=B003MH0H-6TY8-2N5X-90Z2-EWXQ2JKKFNBC
 export ANTHROPIC_BASE_URL=https://yunyi.cfd/claude
 export DASHSCOPE_API_KEY=
